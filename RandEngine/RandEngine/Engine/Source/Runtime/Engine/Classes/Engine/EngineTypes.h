@@ -13,3 +13,14 @@ namespace EEndPlayReason
         Quit,
     };
 }
+
+namespace EAnimationMode
+{
+    enum Type : int
+    {
+        AnimationBlueprint,
+        AnimationSingleNode,
+        // This is custom type, engine leaves AnimInstance as it is
+        AnimationCustomMode,
+    };
+}
