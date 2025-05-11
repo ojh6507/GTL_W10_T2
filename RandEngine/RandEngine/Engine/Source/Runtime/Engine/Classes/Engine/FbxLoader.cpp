@@ -20,6 +20,8 @@
 #include "Components/Material/Material.h" // UMaterial, FFbxMaterialInfo (또는 FObjMaterialInfo) 정의
 #include "UserInterface/Console.h"    // Console 클래스 (로깅 제거됨)
 // #include "Launch/EngineLoop.h"        // EngineLoop::GraphicDevice 접근용 (필요 시)
+#include <fstream>
+
 #include "AssetManager.h"
 #include "Components/Mesh/SkeletalMeshComponent.h"
 #include "UObject/ObjectFactory.h"    // FManagerFBX 에서 사용
@@ -1658,11 +1660,22 @@ void FFBXLoader::CalculateTangent(FSkeletalMeshVertex& PivotVertex, const FSkele
 
 bool FManagerFBX::LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult)
 {
+    FWString BinaryPath = (InFilePath + ".bin").ToWideString();
+    if (std::ifstream(BinaryPath).good())
+    {
+        LoadFBXFromBinary(BinaryPath, OutResult);
+    }
+
+    if (OutResult.Animations.Num() > 0 || OutResult.SkeletalMeshes.Num() > 0)
+    {
+        return true;
+    }
+
     FWString MeshKey = InFilePath.ToWideString();
 
     USkeletalMesh* NewMesh = FObjectFactory::ConstructObject<USkeletalMesh>(nullptr);
     NewMesh->Skeleton = FObjectFactory::ConstructObject<USkeleton>(NewMesh); // Outer를 NewMesh로 설정 예시
-
+    
     UAnimSequence* NewAnimSequence = nullptr;
 
     FSkeletalMeshRenderData* RenderData = LoadFBXSkeletalMeshAsset(InFilePath, NewMesh->Skeleton, NewAnimSequence);
@@ -1684,6 +1697,9 @@ bool FManagerFBX::LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult)
     {
         OutResult.Animations.Add(NewAnimSequence);
     }
+
+    SaveFBXToBinary(BinaryPath, OutResult);
+    
     return true;
 }
 
@@ -1708,8 +1724,66 @@ FSkeletalMeshRenderData* FManagerFBX::LoadFBXSkeletalMeshAsset(const FString& Pa
 }
 
 void FManagerFBX::CombineMaterialIndex(FSkeletalMeshRenderData& OutFSkeletalMesh) { /* No-op */ }
-bool FManagerFBX::SaveSkeletalMeshToBinary(const FWString& FilePath, const FSkeletalMeshRenderData& SkeletalMesh) { return false; /* TODO */ }
-bool FManagerFBX::LoadSkeletalMeshFromBinary(const FWString& FilePath, FSkeletalMeshRenderData& OutSkeletalMesh) { return false; /* TODO */ }
+
+bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& OutResult)
+{
+    std::ifstream File(FilePath, std::ios::binary);
+    if (!File.is_open())
+    {
+        assert("CAN'T OPEN FBX BINARY FILE");
+        return false;
+    }
+    
+    //USkeletalMesh* NewMesh = FObjectFactory::ConstructObject<USkeletalMesh>(nullptr);
+    //NewMesh->Skeleton = FObjectFactory::ConstructObject<USkeleton>(NewMesh);
+
+    // TODO
+    // Read Mesh Data
+    
+    //OutResult.SkeletalMeshes.Add(NewMesh);
+
+    // TODO
+    // int32 AnimationCount = File.read();
+    //
+    // for (int32 i = 0; i < AnimationCount; i++)
+    // {
+    //     FName AnimStackName = File.read();
+    //     
+    //     UAnimSequence* AnimSequence = FObjectFactory::ConstructObject<UAnimSequence>(nullptr, AnimStackName);
+    //     UAnimDataModel* AnimDataModel = FObjectFactory::ConstructObject<UAnimDataModel>(nullptr);
+    //     AnimSequence->SetAnimDataModel(AnimDataModel);
+    //
+    //     // TODO
+    //     // Read Animation Data
+    //     
+    //     OutResult.Animations.Add(AnimSequence);
+    // }
+    
+    return false;
+}
+
+bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult& OutResult)
+{
+    std::filesystem::path Path(FilePath);
+    std::filesystem::path Dir = Path.parent_path();
+    if (!std::filesystem::exists(Dir))
+    {
+        std::filesystem::create_directories(Dir);
+    }
+    
+    std::ofstream File(Path, std::ios::binary);
+    if (!File.is_open())
+    {
+        assert("CAN'T SAVE FBX BINARY FILE");
+        return false;
+    }
+
+    // TODO
+    File << "";
+    File.close();
+
+    return false;
+}
 
 // Parameter type corrected
 UMaterial* FManagerFBX::CreateMaterial(const FFbxMaterialInfo& MaterialInfo)

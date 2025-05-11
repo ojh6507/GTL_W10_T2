@@ -151,7 +151,7 @@ void USkeletalMeshComponent::PlayAnimation(class UAnimationAsset* NewAnimToPlay,
 
 class UAnimSingleNodeInstance* USkeletalMeshComponent::GetSingleNodeInstance() const
 {
-    return Cast<UAnimSingleNodeInstance>(   AnimScriptInstance);
+    return Cast<UAnimSingleNodeInstance>(AnimScriptInstance);
 }
 
 void USkeletalMeshComponent::SetAnimation(UAnimationAsset* NewAnimToPlay)

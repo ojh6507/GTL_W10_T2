@@ -79,10 +79,9 @@ public:
     static FSkeletalMeshRenderData* LoadFBXSkeletalMeshAsset(const FString& PathFileName, USkeleton* OutSkeleton, UAnimSequence*& OutAnimSequence);
 
     static void CombineMaterialIndex(FSkeletalMeshRenderData& OutFSkeletalMesh);
-
-    static bool SaveSkeletalMeshToBinary(const FWString& FilePath, const FSkeletalMeshRenderData& SkeletalMesh);
-
-    static bool LoadSkeletalMeshFromBinary(const FWString& FilePath, FSkeletalMeshRenderData& OutSkeletalMesh);
+    
+    static bool LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& OutResult);
+    static bool SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult& OutResult);
 
     static UMaterial* CreateMaterial(const FFbxMaterialInfo& MaterialInfo);
 
