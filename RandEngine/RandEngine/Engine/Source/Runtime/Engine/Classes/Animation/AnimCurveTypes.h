@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Curves/RichCurve.h"
 #include "Math/Transform.h"
 #include "UObject/NameTypes.h"
@@ -108,4 +108,9 @@ struct FTransformCurve: public FAnimCurveBase
 
     const FVectorCurve* GetVectorCurveByIndex(int32 Index) const;
     FVectorCurve* GetVectorCurveByIndex(int32 Index);
+};
+
+// 어떤 데이터를 채워야 할지? 다가져오긴 좀
+struct FBlendedCurve
+{
 };

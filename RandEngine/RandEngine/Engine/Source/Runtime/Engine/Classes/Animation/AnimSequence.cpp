@@ -31,7 +31,6 @@ void UAnimSequence::GetAnimationPose(FPoseContext& OutAnimationPoseData, const F
     }
 
     const TArray<FBoneAnimationTrack>& BoneTracks = DataModel->GetBoneAnimationTracks();
-
     const FFrameRate FrameRate = DataModel->GetFrameRate();
     const float FrameTime = ExtractionContext.CurrentTime * FrameRate.AsDecimal();
 
