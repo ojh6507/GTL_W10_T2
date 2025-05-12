@@ -506,6 +506,22 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
             ImGui::SetCurrentContext(GEngineLoop.SkeletalViewerSubEngine->SubUI->Context);
             GEngineLoop.CurrentImGuiContext = ImGui::GetCurrentContext();
             return 0;
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_XBUTTONDOWN:
+        case WM_LBUTTONDBLCLK:
+        case WM_RBUTTONDBLCLK:
+        case WM_MBUTTONDBLCLK:
+        case WM_XBUTTONDBLCLK:
+            SetFocus(hWnd); // 클릭 시 포커스 설정
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
+
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_XBUTTONUP:
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
         default:
             return DefWindowProc(hWnd, Msg, wParam, lParam);
         }
@@ -536,6 +552,23 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
                 GEngineLoop.AnimationViewerSubEngine->ViewportClient->AspectRatio = (FullWidth * 0.75f) / FullHeight;
             }
             return 0;
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_XBUTTONDOWN:
+        case WM_LBUTTONDBLCLK:
+        case WM_RBUTTONDBLCLK:
+        case WM_MBUTTONDBLCLK:
+        case WM_XBUTTONDBLCLK:
+            SetFocus(GEngineLoop.AnimationViewerWnd); // 클릭 시 포커스 설정
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
+
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_XBUTTONUP:
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
+
         case WM_CLOSE:
             // GEngineLoop.SelectSkeletalMesh(nullptr);
             GEngineLoop.AnimationViewerSubEngine->ViewportClient->CameraReset();
@@ -591,7 +624,22 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
             }
             GEngineLoop.UpdateUI();
             break;
-        
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+        case WM_XBUTTONDOWN:
+        case WM_LBUTTONDBLCLK:
+        case WM_RBUTTONDBLCLK:
+        case WM_MBUTTONDBLCLK:
+        case WM_XBUTTONDBLCLK:
+            SetFocus(hWnd); // 클릭 시 포커스 설정
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
+
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+        case WM_XBUTTONUP:
+            return 0; // 메시지 처리 완료, 부모로 전달 안 함
         case WM_ACTIVATE:
             if (ImGui::GetCurrentContext() == nullptr) break;
             ImGui::SetCurrentContext(GEngineLoop.FUIManager->GetContext());

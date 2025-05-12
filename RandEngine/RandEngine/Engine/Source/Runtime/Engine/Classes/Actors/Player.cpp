@@ -22,6 +22,8 @@
 void AEditorPlayer::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+
     if (GetOuter() == GEngine)
         ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient().get();
     else
@@ -29,7 +31,12 @@ void AEditorPlayer::Tick(float DeltaTime)
         UObject* Outer = GetOuter();
         ActiveViewport = Cast<USubEngine>(Outer)->ViewportClient;
     }
-    Input();
+    HWND hFocus = ::GetFocus();
+    if (hFocus) 
+    {
+        if(hFocus == GEngineLoop.AppWnd)
+           Input();
+    }
 }
 
 void AEditorPlayer::Input()

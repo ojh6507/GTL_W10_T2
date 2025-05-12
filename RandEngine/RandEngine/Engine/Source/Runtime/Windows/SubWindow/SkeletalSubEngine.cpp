@@ -15,7 +15,7 @@ USkeletalSubEngine::~USkeletalSubEngine()
 }
 
 void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDXDBufferManager* InBufferManager, UImGuiManager* InSubWindow,
-                                    UnrealEd* InUnrealEd)
+    UnrealEd* InUnrealEd)
 {
     Graphics = InGraphics;
     BufferManager = InBufferManager;
@@ -27,16 +27,16 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
     SubRenderer->Initialize(InGraphics, InBufferManager, this);
 
     ViewportClient = new FEditorViewportClient();
-    ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0,0,800,600),this);
+    ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0, 0, 800, 600), this);
     ViewportClient->CameraReset();
 
     EditorPlayer = FObjectFactory::ConstructObject<AEditorPlayer>(this);
-    EditorPlayer->SetCoordMode(CDM_LOCAL); 
+    EditorPlayer->SetCoordMode(CDM_LOCAL);
     SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
 
     BasePlane = FObjectFactory::ConstructObject<ACube>(this);
-    BasePlane->SetActorScale(FVector(10,10,1));
-    BasePlane->SetActorLocation(FVector(0,0,-1));
+    BasePlane->SetActorScale(FVector(10, 10, 1));
+    BasePlane->SetActorLocation(FVector(0, 0, -1));
     SelectedBoneComponent = FObjectFactory::ConstructObject<USceneComponent>(this);
     SelectedActor = SkeletalMeshActor;
 }
@@ -44,12 +44,16 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
 void USkeletalSubEngine::Tick(float DeltaTime)
 {
     ViewportClient->Tick(DeltaTime);
-    if (::GetForegroundWindow() == *Wnd)
+    HWND hFocus = ::GetFocus();
+    if (hFocus)
     {
-        Input(DeltaTime);
-        EditorPlayer->Tick(DeltaTime);
+        if (hFocus == *Wnd)
+        {
+            Input(DeltaTime);
+            EditorPlayer->Tick(DeltaTime);
+        }
     }
-    Render();    
+    Render();
 }
 
 void USkeletalSubEngine::Input(float DeltaTime)
@@ -69,7 +73,7 @@ void USkeletalSubEngine::Input(float DeltaTime)
         float DeltaX = CursorPos.x - LastMousePos.x;
         float DeltaY = CursorPos.y - LastMousePos.y;
         ViewportClient->CameraRotateYaw(DeltaX * 0.1f);
-        ViewportClient->CameraRotatePitch(DeltaY*0.1f);
+        ViewportClient->CameraRotatePitch(DeltaY * 0.1f);
         LastMousePos = CursorPos;
     }
     else
@@ -121,6 +125,30 @@ void USkeletalSubEngine::Input(float DeltaTime)
             EditorPlayer->SetMode(CM_SCALE);
         }
     }
+
+    /* if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+     {
+         if (!bLBClicked)
+         {
+             bLBClicked = true;
+             GetCursorPos(&LastMousePos);
+         }
+         POINT CursorPos;
+         GetCursorPos(&CursorPos);
+
+         float DeltaX = CursorPos.x - LastMousePos.x;
+         float DeltaY = CursorPos.y - LastMousePos.y;
+         ViewportClient->CameraRotateYaw(DeltaX * 0.1f);
+         ViewportClient->CameraRotatePitch(DeltaY * 0.1f);
+         LastMousePos = CursorPos;
+     }
+     else
+     {
+         if (bLBClicked)
+         {
+             bLBClicked = false;
+         }
+     }*/
 }
 
 void USkeletalSubEngine::Render()
@@ -130,12 +158,12 @@ void USkeletalSubEngine::Render()
         SubRenderer->PrepareRender(ViewportClient);
         SubRenderer->Render();
         SubRenderer->ClearRender();
-        
+
         // Sub window rendering
         SubUI->BeginFrame();
 
         UnrealEditor->Render(EWindowType::WT_SkeletalSubWindow);
-        
+
         SubUI->EndFrame();
         // Sub swap
         Graphics->SwapBuffer();
