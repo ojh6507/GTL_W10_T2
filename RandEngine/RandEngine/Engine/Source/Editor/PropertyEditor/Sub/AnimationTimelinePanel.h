@@ -16,22 +16,22 @@
 class UAnimSequence; // 실제 UAnimSequence를 사용한다면
 
 // --- 모의(Mock) 애니메이션 데이터 구조체 ---
-struct FMockAnimNotifyEvent
-{
-    int EventId;
-    float TriggerTime = 0.0f;
-    FName NotifyName;
-    // FString NotifyDisplayName; // NotifyName.ToString()으로 동적 생성 가능
-    int UserInterfaceTrackId; // 이 노티파이가 속한 FEditorTimelineTrack의 TrackId
-
-    FMockAnimNotifyEvent(float InTime, FName InName, int InUITrackId = -1) // 기본값 -1 (할당 안됨)
-        : TriggerTime(InTime), NotifyName(InName), UserInterfaceTrackId(InUITrackId)
-    {
-        EventId = NextEventId++;
-    }
-
-    static int NextEventId;
-};
+//struct FMockAnimNotifyEvent
+//{
+//    int EventId;
+//    float TriggerTime = 0.0f;
+//    FName NotifyName;
+//    // FString NotifyDisplayName; // NotifyName.ToString()으로 동적 생성 가능
+//    int UserInterfaceTrackId; // 이 노티파이가 속한 FEditorTimelineTrack의 TrackId
+//
+//    FMockAnimNotifyEvent(float InTime, FName InName, int InUITrackId = -1) // 기본값 -1 (할당 안됨)
+//        : TriggerTime(InTime), NotifyName(InName), UserInterfaceTrackId(InUITrackId)
+//    {
+//        EventId = NextEventId++;
+//    }
+//
+//    static int NextEventId;
+//};
 
 //class MockAnimSequence
 //{

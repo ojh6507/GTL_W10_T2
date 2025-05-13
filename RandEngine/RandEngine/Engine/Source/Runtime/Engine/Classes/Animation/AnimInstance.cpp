@@ -6,10 +6,16 @@
 
 UAnimInstance::UAnimInstance()
 {
+    NotifyQueue = new FAnimNotifyQueue();
 }
 
 UAnimInstance::~UAnimInstance()
 {
+    if (NotifyQueue)
+    {
+        delete NotifyQueue;
+        NotifyQueue = nullptr;
+    }
 }
 
 void UAnimInstance::Initialize()
@@ -20,12 +26,12 @@ void UAnimInstance::Initialize()
         //RequiredBones.BoneNames = OwningComponent->GetBoneNames();
         //RequiredBones.ParentIndices = OwningComponent->GetBoneParentIndices();
     }
+   
 }
 
 void UAnimInstance::Update(float DeltaTime)
 {
     //AnimProxy->Update(DeltaTime);
-    TriggerAnimNotifies(DeltaTime);
 }
 
 void UAnimInstance::PostEvaluate()
@@ -34,11 +40,18 @@ void UAnimInstance::PostEvaluate()
 
 void UAnimInstance::TriggerAnimNotifies(float DeltaTime)
 {
-    /*for (auto& Notify : NotifyQueue.TriggeredNotifies)
+    if (NotifyQueue)
     {
-        HandleNotify(Notify);
+        for (const FAnimNotifyEvent& NotifyToTrigger : NotifyQueue->ActiveNotifies)
+        {
+            // --- 3. 각 노티파이에 대한 실제 액션 수행 (HandleNotify 역할) ---
+            if (NotifyActionMap.Contains(NotifyToTrigger.NotifyName))
+            {
+                NotifyActionMap[NotifyToTrigger.NotifyName].Broadcast(NotifyToTrigger.NotifyName);
+            }
+        }
+        NotifyQueue->ActiveNotifies.Empty(); // 처리 후 큐 비우기
     }
-    NotifyQueue.TriggeredNotifies.Empty();*/
 }
 
 //void UAnimInstance::HandleNotify(const FAnimNotifyEvent& NotifyEvent)

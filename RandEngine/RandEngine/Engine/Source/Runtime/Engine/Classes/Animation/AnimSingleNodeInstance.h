@@ -31,11 +31,14 @@ public:
 public:
     UAnimationAsset* CurrentAsset = nullptr;
     int32 frame = 0;
+    float PreviousTime = 0;
     bool bIsLooping;
     bool bIsPlaying;
     float CurrentTime;
     float PlayRate;
     bool bUseExternalTime = false;
     float ExternalTime = 0.f;
+    TSet<int> TriggeredNotifyIDsThisCycle;
+
 };
 

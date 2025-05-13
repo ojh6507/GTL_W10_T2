@@ -150,3 +150,31 @@ struct FAnimExtractContext
         return BonesRequired[BoneIndex];
     }
 };
+
+struct FAnimNotifyEvent
+{
+    FName NotifyName; // Notify name
+    int EventId;
+    int NotifyTrackIndex;
+    float TriggerTime; // Notify time
+ 
+    FAnimNotifyEvent()
+        : NotifyName(NAME_None)
+        , EventId(-1)
+        , NotifyTrackIndex(INDEX_NONE)
+        , TriggerTime(0.f)
+    {
+    }
+    FAnimNotifyEvent(const FName& InNotifyName, int EventId, int NotifyTrackIndex, float TriggerTime)
+        : NotifyName(InNotifyName)
+        , EventId(EventId)
+        , NotifyTrackIndex(NotifyTrackIndex)
+        , TriggerTime(TriggerTime)
+    {
+    }
+};
+struct FAnimNotifyQueue
+{
+    TArray<FAnimNotifyEvent> ActiveNotifies;
+    //TArray<FAnimNotifyEvent> TriggeredNotifies;
+};
