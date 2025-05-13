@@ -1680,8 +1680,9 @@ bool FManagerFBX::LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult)
     NewMesh->Skeleton = FObjectFactory::ConstructObject<USkeleton>(NewMesh); // Outer를 NewMesh로 설정 예시
     
     TArray<UAnimSequence*> NewAnimSequenceArray;
+    TArray<UMaterial*> Materials;
 
-    FSkeletalMeshRenderData* RenderData = LoadFBXSkeletalMeshAsset(InFilePath, NewMesh->Skeleton, NewAnimSequenceArray);
+    FSkeletalMeshRenderData* RenderData = LoadFBXSkeletalMeshAsset(InFilePath, NewMesh->Skeleton, NewAnimSequenceArray, Materials);
     if (!RenderData)
     {
         for (auto& NewAnimSequence : NewAnimSequenceArray)
@@ -1692,6 +1693,11 @@ bool FManagerFBX::LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult)
         GUObjectArray.MarkRemoveObject(NewMesh);
         return false;
     }
+
+    for (const auto& Material : Materials)
+    {
+        OutResult.Materials.Add(Material);
+    } 
     
     NewMesh->SetData(RenderData, OutResult.Materials);
 
@@ -1702,13 +1708,14 @@ bool FManagerFBX::LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult)
         OutResult.Animations.Add(NewAnimSequence);
     }
 
+
     SaveFBXToBinary(BinaryPath, OutResult);
     
     return true;
 }
 
 // --- FManagerFBX Static Method Implementations ---
-FSkeletalMeshRenderData* FManagerFBX::LoadFBXSkeletalMeshAsset(const FString& PathFileName, USkeleton* OutSkeleton, TArray<UAnimSequence*>& OutAnimSequenceArray)
+FSkeletalMeshRenderData* FManagerFBX::LoadFBXSkeletalMeshAsset(const FString& PathFileName, USkeleton* OutSkeleton, TArray<UAnimSequence*>& OutAnimSequenceArray, TArray<UMaterial*>& OutMaterials)
 {
     using namespace FBX;
     if (!OutSkeleton) return nullptr; // USkeleton 객체 필요
@@ -1723,6 +1730,13 @@ FSkeletalMeshRenderData* FManagerFBX::LoadFBXSkeletalMeshAsset(const FString& Pa
         delete NewRenderData;
         return nullptr;
     }
+
+    OutMaterials.Empty();
+    for (const auto& Material : NewRenderData->Materials)
+    {
+        OutMaterials.Add(CreateMaterial(Material));
+    } 
+    
     for (auto& OutAnimSequence : OutAnimSequenceArray)
     {
         OutAnimSequence->Skeleton = OutSkeleton;
@@ -1734,40 +1748,14 @@ FSkeletalMeshRenderData* FManagerFBX::LoadFBXSkeletalMeshAsset(const FString& Pa
 void FManagerFBX::CombineMaterialIndex(FSkeletalMeshRenderData& OutFSkeletalMesh) { /* No-op */ }
 
 bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& OutResult)
-{
-    return false;
-    
+{    
     std::ifstream File(FilePath, std::ios::binary);
     if (!File.is_open())
     {
         assert("CAN'T OPEN FBX BINARY FILE");
         return false;
     }
-    
-    //USkeletalMesh* NewMesh = FObjectFactory::ConstructObject<USkeletalMesh>(nullptr);
-    //NewMesh->Skeleton = FObjectFactory::ConstructObject<USkeleton>(NewMesh);
 
-    // TODO
-    // Read Mesh Data
-    
-    //OutResult.SkeletalMeshes.Add(NewMesh);
-
-    // TODO
-    // int32 AnimationCount = File.read();
-    //
-    // for (int32 i = 0; i < AnimationCount; i++)
-    // {
-    //     FName AnimStackName = File.read();
-    //     
-    //     UAnimSequence* AnimSequence = FObjectFactory::ConstructObject<UAnimSequence>(nullptr, AnimStackName);
-    //     UAnimDataModel* AnimDataModel = FObjectFactory::ConstructObject<UAnimDataModel>(nullptr);
-    //     AnimSequence->SetAnimDataModel(AnimDataModel);
-    //
-    //     // TODO
-    //     // Read Animation Data
-    //     
-    //     OutResult.Animations.Add(AnimSequence);
-    // }
     uint32 SkeletonNum = 0;
     File.read(reinterpret_cast<char*>(&SkeletonNum), sizeof(SkeletonNum));
     OutResult.Skeletons.SetNum(SkeletonNum);
@@ -1867,9 +1855,8 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
     uint32 SkeletalMeshNum = OutResult.SkeletalMeshes.Num();
     File.read(reinterpret_cast<char*>(&SkeletalMeshNum), sizeof(SkeletalMeshNum));
     OutResult.SkeletalMeshes.SetNum(SkeletalMeshNum);
-    for (uint32 i = 0; i < SkeletalMeshNum; i++)
+    for (USkeletalMesh*& SkeletalMesh : OutResult.SkeletalMeshes)
     {
-        USkeletalMesh*& SkeletalMesh = OutResult.SkeletalMeshes[i];
         FString SkeletalMeshName;
         Serializer::ReadFString(File, SkeletalMeshName);
         SkeletalMesh = FObjectFactory::ConstructObject<USkeletalMesh>(nullptr, SkeletalMeshName);
@@ -1889,13 +1876,13 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
         
         Serializer::ReadFString(File, SkeletalMeshRenderData->MeshName);
         Serializer::ReadFString(File, SkeletalMeshRenderData->FilePath);
-
+    
         // Vertex
         Serializer::ReadArray(File, SkeletalMeshRenderData->Vertices);
-
+    
         // Indices
         Serializer::ReadArray(File, SkeletalMeshRenderData->Indices);
-
+    
         // Materials
         uint32 MaterialCount;
         File.read(reinterpret_cast<char*>(&MaterialCount), sizeof(MaterialCount));
@@ -1914,7 +1901,7 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
             File.read(reinterpret_cast<char*>(&MaterialInfo.RoughnessFactor), sizeof(MaterialInfo.RoughnessFactor));
             File.read(reinterpret_cast<char*>(&MaterialInfo.SpecularPower), sizeof(MaterialInfo.SpecularPower));
             File.read(reinterpret_cast<char*>(&MaterialInfo.OpacityFactor), sizeof(MaterialInfo.OpacityFactor));
-
+    
             Serializer::ReadFWString(File, MaterialInfo.BaseColorTexturePath);
             Serializer::ReadFWString(File, MaterialInfo.NormalTexturePath);
             Serializer::ReadFWString(File, MaterialInfo.MetallicTexturePath);
@@ -1932,34 +1919,38 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
             File.read(reinterpret_cast<char*>(&MaterialInfo.bHasEmissiveTexture), sizeof(MaterialInfo.bHasEmissiveTexture));
             File.read(reinterpret_cast<char*>(&MaterialInfo.bHasAmbientOcclusionTexture), sizeof(MaterialInfo.bHasAmbientOcclusionTexture));
             File.read(reinterpret_cast<char*>(&MaterialInfo.bHasOpacityTexture), sizeof(MaterialInfo.bHasOpacityTexture));
-
+    
             File.read(reinterpret_cast<char*>(&MaterialInfo.bIsTransparent), sizeof(MaterialInfo.bIsTransparent));
             File.read(reinterpret_cast<char*>(&MaterialInfo.bUsePBRWorkflow), sizeof(MaterialInfo.bUsePBRWorkflow));
         }
 
+        for (FFbxMaterialInfo& MaterialInfo : SkeletalMeshRenderData->Materials)
+        {
+            UMaterial* Material = CreateMaterial(MaterialInfo);
+            OutResult.Materials.Add(Material);
+        }
+        
+        
         // Material Subsets
         Serializer::ReadArray(File, SkeletalMeshRenderData->Subsets);
         
-
         // AABB
         File.read(reinterpret_cast<char*>(&SkeletalMeshRenderData->Bounds.MinLocation), sizeof(FVector));
         File.read(reinterpret_cast<char*>(&SkeletalMeshRenderData->Bounds.MaxLocation), sizeof(FVector));
-
+    
         SkeletalMesh->SetData(SkeletalMeshRenderData, OutResult.Materials);
     }
 
     uint32 AnimationNum;
     File.read(reinterpret_cast<char*>(&AnimationNum), sizeof(AnimationNum));
     OutResult.Animations.SetNum(AnimationNum);
-    for (uint32 i = 0; i < AnimationNum; i++)
+    for (UAnimationAsset*& Animation : OutResult.Animations)
     {
-        UAnimationAsset*& Animation = OutResult.Animations[i];
-
         FString AnimationName;
         Serializer::ReadFString(File, AnimationName);
         
         Animation = FObjectFactory::ConstructObject<UAnimSequence>(nullptr, AnimationName);
-
+    
         FString SkeletonName;
         Serializer::ReadFString(File, SkeletonName);
         for (auto& Skeleton : OutResult.Skeletons)
@@ -1973,66 +1964,67 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
         
         if (UAnimSequence* AnimSequence = Cast<UAnimSequence>(Animation))
         {
-            //if (UAnimDataModel* AnimDataModel = AnimSequence->GetDataModel())
+            FString AnimDataModelName;
+            Serializer::ReadFString(File, AnimDataModelName);
+            UAnimDataModel* AnimDataModel = FObjectFactory::ConstructObject<UAnimDataModel>(nullptr, AnimDataModelName);
+            AnimSequence->SetAnimDataModel(AnimDataModel);
+
+            float PlayLength = AnimDataModel->GetPlayLength();
+            File.read(reinterpret_cast<char*>(&PlayLength), sizeof(PlayLength));
+            AnimDataModel->SetPlayLength(PlayLength);
+                
+            FFrameRate FrameRate = AnimDataModel->GetFrameRate();
+            File.read(reinterpret_cast<char*>(&FrameRate), sizeof(FrameRate));
+            AnimDataModel->SetFrameRate(FrameRate);
+    
+            float NumberOfFrames = AnimDataModel->GetNumberOfFrames();
+            File.read(reinterpret_cast<char*>(&NumberOfFrames), sizeof(NumberOfFrames));
+            AnimDataModel->SetNumberOfFrames(NumberOfFrames);
+                
+            float NumberOfKeys = AnimDataModel->GetNumberOfKeys();
+            File.read(reinterpret_cast<char*>(&NumberOfKeys), sizeof(NumberOfKeys));
+            AnimDataModel->SetNumberOfKeys(NumberOfKeys);
+    
+            uint32 BoneAnimationTrackNum;
+            File.read(reinterpret_cast<char*>(&BoneAnimationTrackNum), sizeof(BoneAnimationTrackNum));
+            TArray<FBoneAnimationTrack> AnimationTracks;
+            AnimationTracks.SetNum(AnimationNum);
+            for (auto& BoneAnimationTrack : AnimationTracks)
             {
-                FString AnimDataModelName;
-                Serializer::ReadFString(File, AnimDataModelName);
-                UAnimDataModel* AnimDataModel = FObjectFactory::ConstructObject<UAnimDataModel>(nullptr, AnimDataModelName);
-                AnimSequence->SetAnimDataModel(AnimDataModel);
-                float PlayLength = AnimDataModel->GetPlayLength();
-                File.read(reinterpret_cast<char*>(&PlayLength), sizeof(PlayLength));
-                AnimDataModel->SetPlayLength(PlayLength);
-                
-                FFrameRate FrameRate = AnimDataModel->GetFrameRate();
-                File.read(reinterpret_cast<char*>(&FrameRate), sizeof(FrameRate));
-                AnimDataModel->SetFrameRate(FrameRate);
-
-                float NumberOfFrames = AnimDataModel->GetNumberOfFrames();
-                File.read(reinterpret_cast<char*>(&NumberOfFrames), sizeof(NumberOfFrames));
-                AnimDataModel->SetNumberOfFrames(NumberOfFrames);
-                
-                float NumberOfKeys = AnimDataModel->GetNumberOfKeys();
-                File.read(reinterpret_cast<char*>(&NumberOfKeys), sizeof(NumberOfKeys));
-                AnimDataModel->SetNumberOfKeys(NumberOfKeys);
-
-                uint32 BoneAnimationTrackNum;
-                File.read(reinterpret_cast<char*>(&BoneAnimationTrackNum), sizeof(BoneAnimationTrackNum));
-                TArray<FBoneAnimationTrack> AnimationTracks;
-                AnimationTracks.SetNum(AnimationNum);
-                for (auto& BoneAnimationTrack : AnimationTracks)
+                FName BoneAnimationTrackName;
+                File.read(reinterpret_cast<char*>(&BoneAnimationTrackName), sizeof(BoneAnimationTrackName));
+                BoneAnimationTrack = FBoneAnimationTrack();
+                BoneAnimationTrack.Name = BoneAnimationTrackName;
+                    
+                for (auto& Key : BoneAnimationTrack.InternalTrackData.PosKeys)
                 {
-                    FName BoneAnimationTrackName;
-                    File.read(reinterpret_cast<char*>(&BoneAnimationTrackName), sizeof(BoneAnimationTrackName));
-                    BoneAnimationTrack = FBoneAnimationTrack();
-                    BoneAnimationTrack.Name = BoneAnimationTrackName;
-                    
-                    for (auto& Key : BoneAnimationTrack.InternalTrackData.PosKeys)
-                    {
-                        File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
-                    }
-
-                    for (auto& Key : BoneAnimationTrack.InternalTrackData.RotKeys)
-                    {
-                        File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
-                    }
-                    
-                    for (auto& Key : BoneAnimationTrack.InternalTrackData.ScaleKeys)
-                    {
-                        File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
-                    }
+                    File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
                 }
-
-                // TODO Curve 정보 Save
-                //File << AnimDataModel->GetCurveData().;
+    
+                for (auto& Key : BoneAnimationTrack.InternalTrackData.RotKeys)
+                {
+                    File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
+                }
+                    
+                for (auto& Key : BoneAnimationTrack.InternalTrackData.ScaleKeys)
+                {
+                    File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
+                }
             }
+            AnimDataModel->SetBoneAnimationTracks(AnimationTracks);
+    
+            // TODO Curve 정보 Save
+            //File << AnimDataModel->GetCurveData().;
         }
     }
+
+    File.close();
+    
     return true;
 }
 
 bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult& OutResult)
 {
-    return false;
     std::filesystem::path Path(FilePath);
     std::filesystem::path Dir = Path.parent_path();
     if (!std::filesystem::exists(Dir))
@@ -2058,7 +2050,8 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
         File.write(reinterpret_cast<const char*>(&BoneTreeNum), sizeof(BoneTreeNum));
         for (const auto& BoneNode : Skeleton->BoneTree)
         {
-            File.write(reinterpret_cast<const char*>(&BoneNode.Name), sizeof(BoneNode.Name));
+            Serializer::WriteFString(File, BoneNode.Name.ToString());
+            
             File.write(reinterpret_cast<const char*>(&BoneNode.ParentIndex), sizeof(BoneNode.ParentIndex));
             File.write(reinterpret_cast<const char*>(&BoneNode.BindTransform), sizeof(BoneNode.BindTransform));
             File.write(reinterpret_cast<const char*>(&BoneNode.InverseBindTransform), sizeof(BoneNode.InverseBindTransform));
@@ -2071,15 +2064,16 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
         File.write(reinterpret_cast<const char*>(&BoneParentMapNum), sizeof(BoneParentMapNum));
         for (const auto& [Name, BoneParent] : Skeleton->BoneParentMap)
         {
-            File.write(reinterpret_cast<const char*>(&Name), sizeof(Name));
-            File.write(reinterpret_cast<const char*>(&BoneParent), sizeof(BoneParent));
+            Serializer::WriteFString(File, Name.ToString());
+
+            Serializer::WriteFString(File, BoneParent.ToString());
         }
 
         uint32 BoneNameToIndexNum = Skeleton->BoneNameToIndex.Num();
         File.write(reinterpret_cast<const char*>(&BoneNameToIndexNum), sizeof(BoneNameToIndexNum));
         for (const auto& [Name, Index] : Skeleton->BoneNameToIndex)
         {
-            File.write(reinterpret_cast<const char*>(&Name), sizeof(Name));
+            Serializer::WriteFString(File, Name.ToString());
             File.write(reinterpret_cast<const char*>(&Index), sizeof(Index));                                                    
         }
 
@@ -2087,7 +2081,8 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
         File.write(reinterpret_cast<const char*>(&BoneInfoCount), sizeof(BoneInfoCount));
         for (const auto& BoneNode : Skeleton->ReferenceSkeleton.BoneInfo)
         {
-            File.write(reinterpret_cast<const char*>(&BoneNode.Name), sizeof(BoneNode.Name));
+            Serializer::WriteFString(File, BoneNode.Name.ToString());
+
             File.write(reinterpret_cast<const char*>(&BoneNode.ParentIndex), sizeof(BoneNode.ParentIndex));
             File.write(reinterpret_cast<const char*>(&BoneNode.BindTransform), sizeof(BoneNode.BindTransform));
             File.write(reinterpret_cast<const char*>(&BoneNode.InverseBindTransform), sizeof(BoneNode.InverseBindTransform));
@@ -2103,7 +2098,7 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
         File.write(reinterpret_cast<const char*>(&RefBoneNameToIndexNum), sizeof(RefBoneNameToIndexNum));
         for (const auto& [Name, Index] : Skeleton->ReferenceSkeleton.NameToIndexMap)
         {
-            File.write(reinterpret_cast<const char*>(&Name), sizeof(Name));
+            Serializer::WriteFString(File, Name.ToString());
             File.write(reinterpret_cast<const char*>(&Index), sizeof(Index));
         }
 
@@ -2129,8 +2124,8 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
     {
         FName SkeletalMeshName = SkeletalMesh->GetFName();
         Serializer::WriteFString(File, SkeletalMeshName.ToString());
-
-
+    
+    
         FName SkeletonName = SkeletalMesh->Skeleton->GetFName();
         Serializer::WriteFString(File, SkeletonName.ToString());
         // Skeleton 위에서 생성한 거로 넣어주기
@@ -2139,19 +2134,19 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
         
         Serializer::WriteFString(File, SkeletalMeshRenderData->MeshName);
         Serializer::WriteFString(File, SkeletalMeshRenderData->FilePath);
-
+    
         // Vertex
         Serializer::WriteArray(File, SkeletalMeshRenderData->Vertices);
-
+    
         // Indices
         Serializer::WriteArray(File, SkeletalMeshRenderData->Indices);
-
+    
         // Materials
         uint32 MaterialCount = SkeletalMeshRenderData->Materials.Num();
         File.write(reinterpret_cast<const char*>(&MaterialCount), sizeof(MaterialCount));
         for (const FFbxMaterialInfo& MaterialInfo : SkeletalMeshRenderData->Materials)
         {
-            File.write(reinterpret_cast<const char*>(&MaterialInfo.MaterialName), sizeof(MaterialInfo.MaterialName));
+            Serializer::WriteFString(File, MaterialInfo.MaterialName.ToString());
             Serializer::WriteFString(File, MaterialInfo.UUID);
             
             File.write(reinterpret_cast<const char*>(&MaterialInfo.BaseColorFactor), sizeof(MaterialInfo.BaseColorFactor));
@@ -2161,7 +2156,7 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
             File.write(reinterpret_cast<const char*>(&MaterialInfo.RoughnessFactor), sizeof(MaterialInfo.RoughnessFactor));
             File.write(reinterpret_cast<const char*>(&MaterialInfo.SpecularPower), sizeof(MaterialInfo.SpecularPower));
             File.write(reinterpret_cast<const char*>(&MaterialInfo.OpacityFactor), sizeof(MaterialInfo.OpacityFactor));
-
+    
             Serializer::WriteFWString(File, MaterialInfo.BaseColorTexturePath);
             Serializer::WriteFWString(File, MaterialInfo.NormalTexturePath);
             Serializer::WriteFWString(File, MaterialInfo.MetallicTexturePath);
@@ -2179,15 +2174,15 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
             File.write(reinterpret_cast<const char*>(&MaterialInfo.bHasEmissiveTexture), sizeof(MaterialInfo.bHasEmissiveTexture));
             File.write(reinterpret_cast<const char*>(&MaterialInfo.bHasAmbientOcclusionTexture), sizeof(MaterialInfo.bHasAmbientOcclusionTexture));
             File.write(reinterpret_cast<const char*>(&MaterialInfo.bHasOpacityTexture), sizeof(MaterialInfo.bHasOpacityTexture));
-
+    
             File.write(reinterpret_cast<const char*>(&MaterialInfo.bIsTransparent), sizeof(MaterialInfo.bIsTransparent));
             File.write(reinterpret_cast<const char*>(&MaterialInfo.bUsePBRWorkflow), sizeof(MaterialInfo.bUsePBRWorkflow));
         }
-
+    
         // Material Subsets
         Serializer::WriteArray(File, SkeletalMeshRenderData->Subsets);
         
-
+    
         // AABB
         File.write(reinterpret_cast<const char*>(&SkeletalMeshRenderData->Bounds.MinLocation), sizeof(FVector));
         File.write(reinterpret_cast<const char*>(&SkeletalMeshRenderData->Bounds.MaxLocation), sizeof(FVector));        
@@ -2213,16 +2208,16 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
                 
                 float PlayLength = AnimDataModel->GetPlayLength();
                 File.write(reinterpret_cast<char*>(&PlayLength), sizeof(PlayLength));
-
+    
                 FFrameRate FrameRate = AnimDataModel->GetFrameRate();
                 File.write(reinterpret_cast<char*>(&FrameRate), sizeof(FrameRate));
-
+    
                 float NumberOfFrames = AnimDataModel->GetNumberOfFrames();
                 File.write(reinterpret_cast<char*>(&NumberOfFrames), sizeof(NumberOfFrames));
-
+    
                 float NumberOfKeys = AnimDataModel->GetNumberOfKeys();
                 File.write(reinterpret_cast<char*>(&NumberOfKeys), sizeof(NumberOfKeys));
-
+    
                 uint32 BoneAnimationTrackNum = AnimDataModel->GetBoneAnimationTracks().Num();
                 File.write(reinterpret_cast<const char*>(&BoneAnimationTrackNum), sizeof(BoneAnimationTrackNum));
                 for (const auto& BoneAnimationTrack : AnimDataModel->GetBoneAnimationTracks())
@@ -2234,7 +2229,7 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
                     {
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
                     }
-
+    
                     for (const auto& Key : BoneAnimationTrack.InternalTrackData.RotKeys)
                     {
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
@@ -2245,7 +2240,7 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
                     }
                 }
-
+    
                 // TODO Curve 정보 Save
                 //File << AnimDataModel->GetCurveData().;
             }
