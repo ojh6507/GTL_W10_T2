@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "SubEngine.h"
 
 
@@ -24,4 +24,5 @@ public:
     USceneComponent* SelectedBoneComponent = nullptr ;
     USceneComponent* SelectedComponent = nullptr ;
     ACube* BasePlane = nullptr;
+    uint32 SelectBoneIdx = 0;
 };

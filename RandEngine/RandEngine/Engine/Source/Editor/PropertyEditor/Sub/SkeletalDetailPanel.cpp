@@ -34,6 +34,7 @@ void SkeletalDetailPanel::Render(USkeletalMesh* InSkeletalMesh, int32 SelectedBo
                 {
                     ImGui::Text("Bone Name : %s ", *InSkeletalMesh->Skeleton->BoneTree[SelectedBone].Name.ToString());
                 }
+                
                 FMatrix CurrentLocalMatrix = InSkeletalMesh->GetBoneLocalMatrix(SelectedBone);
 
                 FVector Location = CurrentLocalMatrix.GetTranslationVector();
@@ -98,10 +99,12 @@ void SkeletalDetailPanel::Render(USkeletalMesh* InSkeletalMesh, int32 SelectedBo
                     SkeletalSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeLocation(Location);
                     SkeletalSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeRotation(Rotation);
                     SkeletalSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeScale3D(Scale);
+                    SkeletalSubEngine->SelectBoneIdx = SelectedBone;
                     USkeletalSubEngine* AnimationSubEngine = Cast<USkeletalSubEngine>(GEngineLoop.AnimationViewerSubEngine);
                     AnimationSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeLocation(Location);
                     AnimationSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeRotation(Rotation);
                     AnimationSubEngine->SkeletalMeshActor->BoneGizmoSceneComponents[SelectedBone]->SetRelativeScale3D(Scale);
+                    AnimationSubEngine->SelectBoneIdx = SelectedBone;
                 }
                 FMatrix NewLocalMatrix =
                     FMatrix::GetScaleMatrix(Scale) *

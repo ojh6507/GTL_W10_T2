@@ -1,10 +1,11 @@
-﻿#pragma once
+#pragma once
 #include "WindowsCursor.h"
 #include "BaseGizmos/GizmoBaseComponent.h"
 #include "Engine/EditorEngine.h"
 #include "GameFramework/Actor.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "UnrealEd/UnrealEd.h"
+#include "Actors/Player.h"
 
 //자신의 꿈을 펼쳐볼 수 있는 서브 엔진입니다.
 class USubEngine : public UEngine
@@ -33,6 +34,7 @@ public:
     
     POINT LastMousePos;
     bool bRBClicked =false;
+    bool bLBClicked =false;
 
     FEditorViewportClient* ViewportClient;
     bool bIsShowSubWindow;

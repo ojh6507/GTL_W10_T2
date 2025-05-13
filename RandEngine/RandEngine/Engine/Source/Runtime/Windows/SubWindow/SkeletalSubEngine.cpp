@@ -17,6 +17,7 @@ USkeletalSubEngine::~USkeletalSubEngine()
 void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDXDBufferManager* InBufferManager, UImGuiManager* InSubWindow,
     UnrealEd* InUnrealEd)
 {
+    Super::Initialize(hWnd, InGraphics, InBufferManager, InSubWindow, InUnrealEd);
     Graphics = InGraphics;
     BufferManager = InBufferManager;
     Wnd = &hWnd;
@@ -26,13 +27,7 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
     UImGuiManager::ApplySharedStyle(InSubWindow->GetContext(), SubUI->Context);
     SubRenderer->Initialize(InGraphics, InBufferManager, this);
 
-    ViewportClient = new FEditorViewportClient();
-    ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0, 0, 800, 600), this);
-    ViewportClient->CameraReset();
-
-    EditorPlayer = FObjectFactory::ConstructObject<AEditorPlayer>(this);
-    EditorPlayer->SetCoordMode(CDM_LOCAL);
-    SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
+   SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
 
     BasePlane = FObjectFactory::ConstructObject<ACube>(this);
     BasePlane->SetActorScale(FVector(10, 10, 1));
@@ -43,6 +38,7 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
 
 void USkeletalSubEngine::Tick(float DeltaTime)
 {
+    Super::Tick(DeltaTime);
     ViewportClient->Tick(DeltaTime);
     HWND hFocus = ::GetFocus();
     if (hFocus)
@@ -58,8 +54,6 @@ void USkeletalSubEngine::Tick(float DeltaTime)
 
 void USkeletalSubEngine::Input(float DeltaTime)
 {
-    // if (::GetForegroundWindow() != *Wnd)
-    //     return;
     if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
     {
         if (!bRBClicked)

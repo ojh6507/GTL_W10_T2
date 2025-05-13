@@ -492,6 +492,8 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
                     GEngineLoop.GetUnrealEditor()->OnResize(hWnd, EWindowType::WT_SkeletalSubWindow);
                 }
                 GEngineLoop.SkeletalViewerSubEngine->ViewportClient->AspectRatio = (FullWidth * 0.75f) / FullHeight;
+                GEngineLoop.SkeletalViewerSubEngine->ViewportClient->GetViewport()->ResizeViewport(FRect(0.0f, 72.f, FullWidth * 0.8f, FullHeight - 72.f - 32.f));
+
              }
             return 0;
         case WM_CLOSE:
@@ -550,6 +552,8 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
                     GEngineLoop.GetUnrealEditor()->OnResize(hWnd, EWindowType::WT_AnimationSubWindow);
                 }
                 GEngineLoop.AnimationViewerSubEngine->ViewportClient->AspectRatio = (FullWidth * 0.75f) / FullHeight;
+                GEngineLoop.AnimationViewerSubEngine->ViewportClient->GetViewport()->ResizeViewport(FRect(0.0f, 0.f, FullWidth , FullHeight));
+
             }
             return 0;
         case WM_LBUTTONDOWN:

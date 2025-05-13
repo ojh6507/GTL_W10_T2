@@ -467,6 +467,8 @@ void SLevelEditor::RegisterEditorInputDelegates()
 
     InputDelegatesHandles.Add(Handler->OnRawMouseInputDelegate.AddLambda([this](const FPointerEvent& InMouseEvent)
         {
+            HWND hHit = ::GetFocus();
+            if (hHit != GEngineLoop.AppWnd) return;
             // Mouse Move 이벤트 일때만 실행
             if (
                 InMouseEvent.GetInputEvent() == IE_Axis
