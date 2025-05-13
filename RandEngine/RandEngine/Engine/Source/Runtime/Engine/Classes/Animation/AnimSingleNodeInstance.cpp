@@ -99,7 +99,7 @@ void UAnimSingleNodeInstance::ResetToReferencePose()
     OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
 }
 
-void UAnimSingleNodeInstance::UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion)
+void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
     if (!CurrentAsset || !bIsPlaying)
     {
@@ -113,15 +113,15 @@ void UAnimSingleNodeInstance::UpdateAnimation(float DeltaSeconds, bool bNeedsVal
     {
         return;
     }
-    if (bUseExternalTime) 
+    if (bUseExternalTime)
     {
         CurrentTime = ExternalTime;
     }
-    else 
+    else
     {
         CurrentTime += DeltaSeconds * PlayRate;
     }
-   
+
     const double PlayLength = CurrentSequence->GetDataModel()->GetPlayLength();
 
     if (PlayLength > 0.0)

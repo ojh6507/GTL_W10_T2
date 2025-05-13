@@ -1652,6 +1652,7 @@
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\Sub\SkeletalDetailPanel.cpp" />
     <ClCompile Include="Engine\Source\ThirdParty\ImGui\include\ImGui\imgui_neo_internal.cpp" />
     <ClCompile Include="Engine\Source\ThirdParty\ImGui\include\ImGui\imgui_neo_sequencer.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\AnimationRuntime.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="RandEngine.natvis" />
@@ -1998,6 +1999,7 @@
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\Sub\SkeletalDetailPanel.h" />
     <ClInclude Include="Engine\Source\ThirdParty\ImGui\include\ImGui\imgui_neo_internal.h" />
     <ClInclude Include="Engine\Source\ThirdParty\ImGui\include\ImGui\imgui_neo_sequencer.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\AnimationRuntime.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\CompositingShader.hlsl" />

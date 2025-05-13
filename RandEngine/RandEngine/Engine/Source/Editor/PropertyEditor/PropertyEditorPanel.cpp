@@ -41,6 +41,8 @@
 #include "Components/Mesh/SkeletalMeshComponent.h"
 #include "Engine/Asset/SkeletalMeshAsset.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "MyAnimInstance.h"
+#include "Animation/AnimSequence.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -949,49 +951,117 @@ void PropertyEditorPanel::RenderForSkeletalComponent(USkeletalMeshComponent* Ske
         }
 
         static FString PreviewAnimationName = FString("None");
+        static FString PreviewAnimationName2 = FString("None");
         const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
 
-        if (ImGui::BeginCombo("##Animation", GetData(PreviewAnimationName), ImGuiComboFlags_None))
+        if (SkeletalMeshComponent->GetSingleNodeInstance()) 
         {
-            if (ImGui::Selectable("None", false))
+            if (ImGui::BeginCombo("##Animation", GetData(PreviewAnimationName), ImGuiComboFlags_None))
             {
-                SkeletalMeshComponent->SetAnimation(nullptr);
-            }
-            
-            for (const auto& Asset : Assets)
-            {
-                if (Asset.Value.AssetType != EAssetType::Animation)
+                if (ImGui::Selectable("None", false))
                 {
-                    continue;
+                    SkeletalMeshComponent->SetAnimation(nullptr);
                 }
-                
-                if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+            
+                for (const auto& Asset : Assets)
                 {
-                    FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
-                    UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
-                    if (AnimationAsset)
+                    if (Asset.Value.AssetType != EAssetType::Animation)
                     {
-                        PreviewAnimationName = Asset.Value.AssetName.ToString();
-                        SkeletalMeshComponent->SetAnimation(AnimationAsset);
+                        continue;
+                    }
+                
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->SetAnimation(AnimationAsset);
+                        }
                     }
                 }
+                ImGui::EndCombo();
             }
-            ImGui::EndCombo();
         }
 
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            if (ImGui::BeginCombo("##Animation A", GetData(PreviewAnimationName2), ImGuiComboFlags_None))
+            {
+                if (ImGui::Selectable("None", false))
+                {
+                    SkeletalMeshComponent->GetMyAnimInstance()->AnimA = nullptr;
+                }
+
+                for (const auto& Asset : Assets)
+                {
+                    if (Asset.Value.AssetType != EAssetType::Animation)
+                    {
+                        continue;
+                    }
+
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName2 = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->GetMyAnimInstance()->AnimA = Cast<UAnimSequence>(AnimationAsset);
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            if (ImGui::BeginCombo("##Animation B", GetData(PreviewAnimationName), ImGuiComboFlags_None))
+            {
+                if (ImGui::Selectable("None", false))
+                {
+                    SkeletalMeshComponent->GetMyAnimInstance()->AnimB = nullptr;
+                }
+
+                for (const auto& Asset : Assets)
+                {
+                    if (Asset.Value.AssetType != EAssetType::Animation)
+                    {
+                        continue;
+                    }
+
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->GetMyAnimInstance()->AnimB = Cast<UAnimSequence>(AnimationAsset);
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
         static bool bIsLooping = false;
 
         if (ImGui::Button(bIsLooping ? "Loop: ON" : "Loop: OFF"))
         {
             bIsLooping = !bIsLooping;
         }
-        ImGui::SameLine();
 
-        UAnimSingleNodeInstance* AnimationInstance = SkeletalMeshComponent->GetSingleNodeInstance();
-
-        if (AnimationInstance) 
+        if (SkeletalMeshComponent->GetSingleNodeInstance())
         {
-            ImGui::DragFloat("Playrate", &AnimationInstance->PlayRate, 1.0f, -3.0f, 3.0f);
+            ImGui::DragFloat("Playrate", &SkeletalMeshComponent->GetSingleNodeInstance()->PlayRate, 0.1f, -3.0f, 3.0f, "%.2f");
+        }
+
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            ImGui::DragFloat("Playrate", &SkeletalMeshComponent->GetMyAnimInstance()->PlayRate, 0.1f, -3.0f, 3.0f, "%.2f");
+        }
+
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            ImGui::DragFloat("BlendFactor", &SkeletalMeshComponent->GetMyAnimInstance()->BlendAlpha, 0.01f, 0.0f, 1.0f, "%.2f");
         }
 
         if (ImGui::Button("Play"))

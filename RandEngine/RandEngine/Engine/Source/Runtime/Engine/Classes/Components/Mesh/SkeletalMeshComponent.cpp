@@ -6,12 +6,15 @@
 #include "Engine/SkeletalMeshActor.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "MyAnimInstance.h"
 
 USkeletalMeshComponent::USkeletalMeshComponent()
 {
     SkeletalMesh = nullptr;
     selectedSubMeshIndex = -1;
-    AnimScriptInstance = FObjectFactory::ConstructObject<UAnimSingleNodeInstance>(nullptr);
+    //AnimScriptInstance = FObjectFactory::ConstructObject<UAnimSingleNodeInstance>(nullptr);
+    // [TEMP] Animation blend test
+    AnimScriptInstance = FObjectFactory::ConstructObject<UMyAnimInstance>(nullptr);
     AnimScriptInstance->SetOwningComponent(this);
 }
 
@@ -158,10 +161,15 @@ void USkeletalMeshComponent::PlayAnimation(class UAnimationAsset* NewAnimToPlay,
     Play(bLooping);
 }
 
+// [TEMP] Animation blend test
+class UMyAnimInstance* USkeletalMeshComponent::GetMyAnimInstance() const
+{
+    return Cast<UMyAnimInstance>(AnimScriptInstance);
+}
+
 class UAnimSingleNodeInstance* USkeletalMeshComponent::GetSingleNodeInstance() const
 {
-    return AnimScriptInstance;
-    //return Cast<UAnimSingleNodeInstance>(AnimScriptInstance);
+    return Cast<UAnimSingleNodeInstance>(AnimScriptInstance);
 }
 
 void USkeletalMeshComponent::SetAnimation(UAnimationAsset* NewAnimToPlay)
@@ -191,8 +199,11 @@ void USkeletalMeshComponent::Play(bool bLooping)
         UE_LOG(ELogLevel::Warning, TEXT("Play: Animation is currently disabled"));
         return;
     }
-
+    
+    // [TEST] Animation blending test
     UAnimSingleNodeInstance* SingleNodeInstance = GetSingleNodeInstance();
+    UMyAnimInstance* MyAnimInstance = GetMyAnimInstance();
+
     if (SingleNodeInstance)
     {
         UAnimSequence* CurrentSequence = Cast<UAnimSequence>(SingleNodeInstance->CurrentAsset);
@@ -217,6 +228,21 @@ void USkeletalMeshComponent::Play(bool bLooping)
         SingleNodeInstance->SetPlaying(true);
         SingleNodeInstance->SetLooping(bLooping);
     }
+    else if (MyAnimInstance)
+    {
+        const double PlayLength = MyAnimInstance->AnimA->GetDataModel()->GetPlayLength();
+
+        if (MyAnimInstance->PlayRate >= 0.0f)
+        {
+            MyAnimInstance->CurrentTime = 0.0f;
+        }
+        else
+        {
+            MyAnimInstance->CurrentTime = PlayLength;
+        }
+        MyAnimInstance->SetPlaying(true);
+        MyAnimInstance->SetLooping(bLooping);
+    }
     else if (AnimScriptInstance != nullptr)
     {
         UE_LOG(ELogLevel::Warning, TEXT("Currently in Animation Blueprint mode. Please change AnimationMode to Use Animation Asset"));
@@ -231,12 +257,19 @@ void USkeletalMeshComponent::Stop()
         return;
     }
 
+    // [TEST] Animation blending test
     UAnimSingleNodeInstance* SingleNodeInstance = GetSingleNodeInstance();
+    UMyAnimInstance* MyAnimInstance = GetMyAnimInstance();
     
     if (SingleNodeInstance)
     {
         SingleNodeInstance->SetPlaying(false);
         SingleNodeInstance->ResetToReferencePose();
+    }
+    else if (MyAnimInstance)
+    {
+        MyAnimInstance->SetPlaying(false);
+        //MyAnimInstance->ResetToReferencePose();
     }
     else if (AnimScriptInstance != nullptr)
     {
