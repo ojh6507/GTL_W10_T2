@@ -103,7 +103,7 @@ void UAnimSingleNodeInstance::ResetToReferencePose()
     OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
 }
 
-void UAnimSingleNodeInstance::UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion)
+void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
     if (!CurrentAsset || !bIsPlaying)
     {

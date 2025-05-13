@@ -72,20 +72,19 @@ void FDrawer::RenderContentDrawer()
 {
     for (auto Obj : TObjectRange<USkeletalMesh>())
     {
+        if (Obj->GetOuter() != nullptr)
+            continue;
         ImGui::Selectable(GetData(Obj->GetObjectName()));
         
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
             UE_LOG(ELogLevel::Display, TEXT("Double Clicked"));
             static_cast<USkeletalSubEngine*>(GEngineLoop.SkeletalViewerSubEngine)->SetSkeletalMesh(Obj);
-            GEngineLoop.SkeletalViewerSubEngine->SubRenderer->SetPreviewSkeletalMesh(Obj);
             GEngineLoop.SkeletalViewerSubEngine->RequestShowWindow(true);
 
             static_cast<UAnimationSubEngine*>(GEngineLoop.AnimationViewerSubEngine)->SetSkeletalMesh(Obj);
-            GEngineLoop.AnimationViewerSubEngine->SubRenderer->SetPreviewSkeletalMesh(Obj);
             GEngineLoop.AnimationViewerSubEngine->RequestShowWindow(true);
-
-           
+            
             break;
         }
     }

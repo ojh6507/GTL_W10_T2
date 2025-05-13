@@ -5,6 +5,8 @@
 //#include <windows.h>
 //#include <tchar.h>
 
+#include <fstream>
+
 #include "World/World.h"
 #include "Actors/Player.h"
 #include "Animation/AnimationAsset.h"
@@ -39,6 +41,8 @@
 #include "Components/Mesh/SkeletalMeshComponent.h"
 #include "Engine/Asset/SkeletalMeshAsset.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "MyAnimInstance.h"
+#include "Animation/AnimSequence.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -391,8 +395,7 @@ void PropertyEditorPanel::RenderForStaticMesh(UStaticMeshComponent* StaticMeshCo
                 if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
                 {
                     FString MeshName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
-                    UStaticMesh* StaticMesh = FObjManager::GetStaticMesh(MeshName.ToWideString());
-                    if (StaticMesh)
+                    if (UStaticMesh* StaticMesh = UAssetManager::Get().GetStaticMesh(MeshName))
                     {
                         StaticMeshComp->SetStaticMesh(StaticMesh);
                     }
@@ -948,49 +951,117 @@ void PropertyEditorPanel::RenderForSkeletalComponent(USkeletalMeshComponent* Ske
         }
 
         static FString PreviewAnimationName = FString("None");
+        static FString PreviewAnimationName2 = FString("None");
         const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
 
-        if (ImGui::BeginCombo("##Animation", GetData(PreviewAnimationName), ImGuiComboFlags_None))
+        if (SkeletalMeshComponent->GetSingleNodeInstance()) 
         {
-            if (ImGui::Selectable("None", false))
+            if (ImGui::BeginCombo("##Animation", GetData(PreviewAnimationName), ImGuiComboFlags_None))
             {
-                SkeletalMeshComponent->SetAnimation(nullptr);
-            }
-            
-            for (const auto& Asset : Assets)
-            {
-                if (Asset.Value.AssetType != EAssetType::Animation)
+                if (ImGui::Selectable("None", false))
                 {
-                    continue;
+                    SkeletalMeshComponent->SetAnimation(nullptr);
                 }
-                
-                if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+            
+                for (const auto& Asset : Assets)
                 {
-                    FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
-                    UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
-                    if (AnimationAsset)
+                    if (Asset.Value.AssetType != EAssetType::Animation)
                     {
-                        PreviewAnimationName = Asset.Value.AssetName.ToString();
-                        SkeletalMeshComponent->SetAnimation(AnimationAsset);
+                        continue;
+                    }
+                
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->SetAnimation(AnimationAsset);
+                        }
                     }
                 }
+                ImGui::EndCombo();
             }
-            ImGui::EndCombo();
         }
 
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            if (ImGui::BeginCombo("##Animation A", GetData(PreviewAnimationName2), ImGuiComboFlags_None))
+            {
+                if (ImGui::Selectable("None", false))
+                {
+                    SkeletalMeshComponent->GetMyAnimInstance()->AnimA = nullptr;
+                }
+
+                for (const auto& Asset : Assets)
+                {
+                    if (Asset.Value.AssetType != EAssetType::Animation)
+                    {
+                        continue;
+                    }
+
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName2 = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->GetMyAnimInstance()->AnimA = Cast<UAnimSequence>(AnimationAsset);
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            if (ImGui::BeginCombo("##Animation B", GetData(PreviewAnimationName), ImGuiComboFlags_None))
+            {
+                if (ImGui::Selectable("None", false))
+                {
+                    SkeletalMeshComponent->GetMyAnimInstance()->AnimB = nullptr;
+                }
+
+                for (const auto& Asset : Assets)
+                {
+                    if (Asset.Value.AssetType != EAssetType::Animation)
+                    {
+                        continue;
+                    }
+
+                    if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                    {
+                        FString AssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                        UAnimationAsset* AnimationAsset = UAssetManager::Get().GetAnimationAsset(AssetName);
+                        if (AnimationAsset)
+                        {
+                            PreviewAnimationName = Asset.Value.AssetName.ToString();
+                            SkeletalMeshComponent->GetMyAnimInstance()->AnimB = Cast<UAnimSequence>(AnimationAsset);
+                        }
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
         static bool bIsLooping = false;
 
         if (ImGui::Button(bIsLooping ? "Loop: ON" : "Loop: OFF"))
         {
             bIsLooping = !bIsLooping;
         }
-        ImGui::SameLine();
 
-        UAnimSingleNodeInstance* AnimationInstance = SkeletalMeshComponent->GetSingleNodeInstance();
-
-        if (AnimationInstance) 
+        if (SkeletalMeshComponent->GetSingleNodeInstance())
         {
-            ImGui::DragFloat("Playrate", &AnimationInstance->PlayRate, 1.0f, -3.0f, 3.0f);
+            ImGui::DragFloat("Playrate", &SkeletalMeshComponent->GetSingleNodeInstance()->PlayRate, 0.1f, -3.0f, 3.0f, "%.2f");
+        }
+
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            ImGui::DragFloat("Playrate", &SkeletalMeshComponent->GetMyAnimInstance()->PlayRate, 0.1f, -3.0f, 3.0f, "%.2f");
+        }
+
+        if (SkeletalMeshComponent->GetMyAnimInstance())
+        {
+            ImGui::DragFloat("BlendFactor", &SkeletalMeshComponent->GetMyAnimInstance()->BlendAlpha, 0.01f, 0.0f, 1.0f, "%.2f");
         }
 
         if (ImGui::Button("Play"))
@@ -1169,20 +1240,44 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
     ImGui::Text("Override Material |");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160);
-    // 메테리얼 이름 목록을 const char* 배열로 변환
-    std::vector<const char*> MaterialChars;
-    for (const auto& Material : FObjManager::GetMaterials()) {
-        MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
+
+    static FString PreviewName = FString("None");
+    const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
+
+    if (ImGui::BeginCombo("##Material", GetData(PreviewName), ImGuiComboFlags_None))
+    {
+        if (ImGui::Selectable("None", false))
+        {
+            SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, nullptr);
+        }
+            
+        for (const auto& Asset : Assets)
+        {
+            if (Asset.Value.AssetType != EAssetType::Material)
+            {
+                continue;
+            }
+                
+            if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+            {
+                if (UMaterial* NewMaterial = UAssetManager::Get().GetMaterial(Asset.Value.AssetName))
+                {
+                    SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, NewMaterial);
+                    PreviewName = Asset.Value.AssetName.ToString();
+                }
+            }
+        }
+        ImGui::EndCombo();
     }
 
     //// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
     //if (currentMaterialIndex >= FManagerGetMaterialNum())
     //    currentMaterialIndex = 0;
 
-    if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
-        UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
-        SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
-    }
+    // if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
+    //     UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
+    //     SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
+    // }
 
     if (ImGui::Button("Close"))
     {
@@ -1275,8 +1370,11 @@ void PropertyEditorPanel::RenderCreateMaterialView()
     ImGui::Unindent();
 
     ImGui::NewLine();
-    if (ImGui::Button("Create Material")) {
-        FObjManager::CreateMaterial(tempMaterialInfo);
+    if (ImGui::Button("Create Material"))
+    {
+        UMaterial* Material = FObjectFactory::ConstructObject<UMaterial>(nullptr);
+        Material->SetMaterialInfo(tempMaterialInfo);
+        UAssetManager::Get().AddMaterial(Material);
     }
 
     ImGui::NewLine();

@@ -4,6 +4,7 @@
 #include "Container/Array.h"
 
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimCurveTypes.h"
 
 enum class EAnimInterpolationType : uint8
 {
@@ -33,6 +34,8 @@ struct FPoseContext
 public:
     UAnimInstance* AnimInstance; // Originally from FAnimationBaseContext
     FCompactPose Pose;
+    FBlendedCurve Curve;
+
     bool bIsAdditivePose;
 
     FPoseContext()

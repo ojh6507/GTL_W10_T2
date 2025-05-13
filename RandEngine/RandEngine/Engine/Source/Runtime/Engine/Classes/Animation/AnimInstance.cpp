@@ -66,4 +66,5 @@ USkeletalMeshComponent* UAnimInstance::GetSkelMeshComponent() const
 
 void UAnimInstance::UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion)
 {
+    NativeUpdateAnimation(DeltaSeconds);
 }
