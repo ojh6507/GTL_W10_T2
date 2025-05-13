@@ -43,7 +43,7 @@ public:
 
     void UpdateLightConstant() const;
     void UpdateConstants() const;
-
+    void UpdateBoneConstants() const;
     /** Update Buffer */
     void UpdateViewCamera(FEditorViewportClient* Viewport) const;
     /** Set */
@@ -56,7 +56,7 @@ private:
     USubEngine* Engine = nullptr;
     TArray<UStaticMeshComponent*> StaticMeshComponents;
     USkeletalMesh* PreviewSkeletalMesh = nullptr;
-
+    FEditorViewportClient* TargetViewport = nullptr;
     
 private:
     /** TargetPos & MaxZ Offset */

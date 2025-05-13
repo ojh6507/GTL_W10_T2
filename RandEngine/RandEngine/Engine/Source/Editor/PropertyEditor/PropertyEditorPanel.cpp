@@ -5,6 +5,8 @@
 //#include <windows.h>
 //#include <tchar.h>
 
+#include <fstream>
+
 #include "World/World.h"
 #include "Actors/Player.h"
 #include "Animation/AnimationAsset.h"
@@ -393,8 +395,7 @@ void PropertyEditorPanel::RenderForStaticMesh(UStaticMeshComponent* StaticMeshCo
                 if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
                 {
                     FString MeshName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
-                    UStaticMesh* StaticMesh = FObjManager::GetStaticMesh(MeshName.ToWideString());
-                    if (StaticMesh)
+                    if (UStaticMesh* StaticMesh = UAssetManager::Get().GetStaticMesh(MeshName))
                     {
                         StaticMeshComp->SetStaticMesh(StaticMesh);
                     }
@@ -1082,7 +1083,6 @@ void PropertyEditorPanel::RenderForSkeletalComponent(USkeletalMeshComponent* Ske
         FImGuiWidget::DrawRot3Control("Rotation", SkeletalRotation, 0, 85);
         ImGui::Spacing(); 
 
-        ImGui::InputInt("Int Value", &GEngineLoop.Boneidx, /*step=*/0, /*stepFast=*/50);
         ImGui::TreePop();
     }
     ImGui::PopStyleColor();
@@ -1240,20 +1240,44 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
     ImGui::Text("Override Material |");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160);
-    // 메테리얼 이름 목록을 const char* 배열로 변환
-    std::vector<const char*> MaterialChars;
-    for (const auto& Material : FObjManager::GetMaterials()) {
-        MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
+
+    static FString PreviewName = FString("None");
+    const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
+
+    if (ImGui::BeginCombo("##Material", GetData(PreviewName), ImGuiComboFlags_None))
+    {
+        if (ImGui::Selectable("None", false))
+        {
+            SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, nullptr);
+        }
+            
+        for (const auto& Asset : Assets)
+        {
+            if (Asset.Value.AssetType != EAssetType::Material)
+            {
+                continue;
+            }
+                
+            if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+            {
+                if (UMaterial* NewMaterial = UAssetManager::Get().GetMaterial(Asset.Value.AssetName))
+                {
+                    SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, NewMaterial);
+                    PreviewName = Asset.Value.AssetName.ToString();
+                }
+            }
+        }
+        ImGui::EndCombo();
     }
 
     //// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
     //if (currentMaterialIndex >= FManagerGetMaterialNum())
     //    currentMaterialIndex = 0;
 
-    if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
-        UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
-        SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
-    }
+    // if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
+    //     UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
+    //     SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
+    // }
 
     if (ImGui::Button("Close"))
     {
@@ -1346,8 +1370,11 @@ void PropertyEditorPanel::RenderCreateMaterialView()
     ImGui::Unindent();
 
     ImGui::NewLine();
-    if (ImGui::Button("Create Material")) {
-        FObjManager::CreateMaterial(tempMaterialInfo);
+    if (ImGui::Button("Create Material"))
+    {
+        UMaterial* Material = FObjectFactory::ConstructObject<UMaterial>(nullptr);
+        Material->SetMaterialInfo(tempMaterialInfo);
+        UAssetManager::Get().AddMaterial(Material);
     }
 
     ImGui::NewLine();

@@ -26,6 +26,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "Components/Light/PointLightComponent.h"
+#include "Components/Mesh/SkeletalMesh.h"
 
 FStaticMeshRenderPass::FStaticMeshRenderPass()
     : BufferManager(nullptr)
@@ -367,6 +368,14 @@ void FStaticMeshRenderPass::RenderAllStaticMeshes(const std::shared_ptr<FEditorV
 
         UpdateObjectConstant(WorldMatrix, UUIDColor, bIsSelected);
 
+        auto a = Comp->GetStaticMesh();
+        TArray<FStaticMaterial*> asd;
+        if (a)
+        {
+            asd = a->GetMaterials();
+        }
+        auto b = Comp->GetOverrideMaterials();
+        auto c = Comp->GetselectedSubMeshIndex();
         RenderPrimitive(RenderData, Comp->GetStaticMesh()->GetMaterials(), Comp->GetOverrideMaterials(), Comp->GetselectedSubMeshIndex());
 
         if (Viewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_AABB))
