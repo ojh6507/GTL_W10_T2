@@ -1,6 +1,5 @@
 #pragma once
 #include "AnimSequenceBase.h"
-
 struct FPoseContext;
 
 class UAnimSequence : public UAnimSequenceBase

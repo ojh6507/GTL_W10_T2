@@ -499,6 +499,8 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Source\Developer\AnimationUtils\AnimationUtils.h" />
+    <ClInclude Include="Engine\Source\Editor\PropertyEditor\Sub\AnimationTimelineCommon.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\AnimationRuntime.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\Sub\SkeletalDetailPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSingleNodeInstance.h" />

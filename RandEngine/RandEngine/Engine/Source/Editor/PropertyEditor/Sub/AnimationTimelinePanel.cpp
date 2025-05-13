@@ -14,17 +14,14 @@
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 
+#include "Developer/AnimationUtils/AnimationUtils.h"
+
 #include "Engine/SkeletalMeshActor.h"
 
 #include "Engine/Asset/SkeletalMeshAsset.h"
 #include "Engine/AssetManager.h"
 
-// 정적 멤버 변수 초기화
-#if !defined(FNAME_DEFINED) || !defined(MOCK_GLOBALS_DEFINED) // 이 매크로는 프로젝트 전체에서 한 번만 정의되도록 관리
-#define MOCK_GLOBALS_DEFINED
-int FMockAnimNotifyEvent::NextEventId = 0;
-int FEditorTimelineTrack::NextTrackIdCounter = 1; // ID는 1부터 시작하도록 변경 (0 또는 -1은 특별한 의미로 사용 가능)
-#endif
+#include "SoundManager.h"
 
 SAnimationTimelinePanel::SAnimationTimelinePanel()
     : TargetSequence(nullptr)
@@ -102,42 +99,26 @@ void SAnimationTimelinePanel::InitSkeletalMeshComponent()
 
 void SAnimationTimelinePanel::InitTargetSequence()
 {
-
-    if (!SelectedComponent)
+    UAnimSequence* CurrentAnimInstanceSequence = nullptr;
+    if (SelectedComponent->GetSingleNodeInstance()) // AnimInstance 유효성 확인
     {
-        return;
+        CurrentAnimInstanceSequence = Cast<UAnimSequence>(SelectedComponent->GetSingleNodeInstance()->CurrentAsset);
     }
-
-    if (TargetSequence == nullptr)
+    if (TargetSequence == nullptr || TargetSequence != CurrentAnimInstanceSequence)
     {
+        DisplayableTracks.Empty();
         TargetSequence = Cast<UAnimSequence>(SelectedComponent->GetSingleNodeInstance()->CurrentAsset);
         if (TargetSequence)
         {
             int rootTrackId = FEditorTimelineTrack::NextTrackIdCounter++;
-            // ParentTrackId를 -1로 하여 최상위 루트임을 표시
             DisplayableTracks.Add(FEditorTimelineTrack(EEditorTimelineTrackType::AnimNotify_Root, "Notifies", rootTrackId, -1));
+            for (const FEditorTimelineTrack& savedTrack : TargetSequence->UserDefinedNotifyTracks)
+            {
+                FEditorTimelineTrack uiTrack = savedTrack;
+                uiTrack.ParentTrackId = rootTrackId;
+                DisplayableTracks.Add(uiTrack);
+            }
         }
-
-        //// 예시: "Footsteps" 사용자 트랙 자동 추가 및 기존 노티파이 할당
-        //int footstepTrackId = FEditorTimelineTrack::NextTrackIdCounter++;
-        //DisplayableTracks.Add(FEditorTimelineTrack(EEditorTimelineTrackType::AnimNotify_UserTrack, "Footsteps", footstepTrackId, rootTrackId));
-        //for (FMockAnimNotifyEvent& notify : TargetSequence->Notifies)
-        //{
-        //    if (notify.NotifyName == FName("Footstep_L") || notify.NotifyName == FName("Footstep_R"))
-        //    {
-        //        notify.UserInterfaceTrackId = footstepTrackId;
-        //    }
-        //}
-        //// 예시: "Actions" 사용자 트랙 자동 추가 및 기존 노티파이 할당
-        //int actionTrackId = FEditorTimelineTrack::NextTrackIdCounter++;
-        //DisplayableTracks.Add(FEditorTimelineTrack(EEditorTimelineTrackType::AnimNotify_UserTrack, "Actions", actionTrackId, rootTrackId));
-        //for (FMockAnimNotifyEvent& notify : TargetSequence->Notifies)
-        //{
-        //    if (notify.NotifyName == FName("Jump"))
-        //    {
-        //        notify.UserInterfaceTrackId = actionTrackId;
-        //    }
-        //}
     }
 }
 
@@ -191,12 +172,13 @@ void SAnimationTimelinePanel::ConvertFrameToTimeAndSet(int Frame)
 
 void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
 {
-    SelectedComponent->Play(true);
+    SelectedComponent->Play(bIsLooping);
 
     if (!bIsPlaying || TargetSequence == nullptr || GetSequenceDurationSeconds() <= 0.0f)
     {
         SelectedComponent->GetSingleNodeInstance()->SetExternalTime(CurrentTimeSeconds);
         AnimationDeltaTime = 0;
+        FSoundManager::GetInstance().StopAllSounds();
         return;
     }
     AnimationDeltaTime = ImGui::GetIO().DeltaTime;
@@ -207,7 +189,6 @@ void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
         if (bIsLooping)
         {
             CurrentTimeSeconds = fmodf(CurrentTimeSeconds, GetSequenceDurationSeconds());
-            // TriggeredNotifyEventIdsThisPlayback.Empty(); // 루핑 시 트리거된 이벤트 초기화 (필요시)
         }
         else
         {
@@ -220,7 +201,6 @@ void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
         if (bIsLooping)
         {
             CurrentTimeSeconds = GetSequenceDurationSeconds() - fmodf(-CurrentTimeSeconds, GetSequenceDurationSeconds());
-            // TriggeredNotifyEventIdsThisPlayback.Empty(); // 루핑 시 트리거된 이벤트 초기화 (필요시)
         }
         else
         {
@@ -229,18 +209,47 @@ void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
         }
     }
     SelectedComponent->GetSingleNodeInstance()->SetExternalTime(CurrentTimeSeconds);
-    SelectedComponent->GetSingleNodeInstance()->SetLooping(bIsLooping);
 
 
 }
 
 void SAnimationTimelinePanel::Render() // UEditorPanel 오버라이드
 {
+    FSoundManager::GetInstance().Update();
+
+    USkeletalMeshComponent* CurrentEditorSelectedComponent = nullptr;
+    if (GEngineLoop.AnimationViewerSubEngine)
+    {
+        USkeletalSubEngine* SubEngine = Cast<USkeletalSubEngine>(GEngineLoop.AnimationViewerSubEngine);
+        ASkeletalMeshActor* Actor = SubEngine->SkeletalMeshActor;
+        CurrentEditorSelectedComponent = Actor ? Actor->GetSkeletalMeshComponent() : nullptr;
+    }
+    if (SelectedComponent != CurrentEditorSelectedComponent)
+    {
+        TargetSequence = nullptr;
+        SelectedComponent = nullptr;
+        DisplayableTracks.Empty();
+        CurrentTimeSeconds = 0.0f;
+        bIsPlaying = false;
+        bIsLooping = false;
+        PlaybackSpeed = 1.0f;
+        SelectedNotifyEventId = -1;
+        LastSelectedUserTrackId = -1; // 사용자 트랙 선택도 초기화
+        AnimationDeltaTime = 0.0f;
+    }
+    if (SelectedComponent && SelectedComponent->GetSingleNodeInstance())
+    {
+        SelectedComponent->GetSingleNodeInstance()->SetUseExternalTime(true);
+    }
+
     InitSkeletalMeshComponent();
 
     RenderAnimationSelector();
 
-    InitTargetSequence();
+    if (SelectedComponent)
+    {
+        InitTargetSequence();
+    }
 
     UpdatePlayback(ImGui::GetIO().DeltaTime); // ImGui 델타 타임 사용
     if (SelectedComponent)
@@ -330,6 +339,7 @@ void SAnimationTimelinePanel::RenderTimelineEditor()
         RenderPlaybackControls();
         ImGui::Separator();
         RenderTrackManagementUI(); // 트랙 관리 UI 추가
+        ImGui::Separator();
         RenderNotifyPropertiesUI();
         ImGui::Separator();
         RenderSequencerWidget();   // 시퀀서 위젯
@@ -369,7 +379,7 @@ void SAnimationTimelinePanel::RenderPlaybackControls()
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::Text("Time: %.2f / %.2f s (Frame: %d)", CurrentTimeSeconds, GetSequenceDurationSeconds(), ConvertTimeToFrame());
-   
+
     // im-neo-sequencer는 자체 줌/패닝 기능이 있으므로, 이전 줌/프레임 슬라이더는 제거하거나
     // im-neo-sequencer의 내부 상태를 제어하는 방식으로 변경해야 합니다.
     // 여기서는 일단 제거하고, im-neo-sequencer의 기본 컨트롤에 의존합니다.
@@ -382,7 +392,6 @@ void SAnimationTimelinePanel::RenderTrackManagementUI()
     {
         return;
     }
-
     int rootTrackId = -1;
     for (const auto& track : DisplayableTracks)
     {
@@ -395,15 +404,18 @@ void SAnimationTimelinePanel::RenderTrackManagementUI()
 
     if (rootTrackId != -1)
     {
+        ImGui::Text("Set Track Name");
         static char newTrackNameInput[128] = "New User Track";
-        ImGui::InputText("New Track Name", newTrackNameInput, IM_ARRAYSIZE(newTrackNameInput));
+        ImGui::PushItemWidth(200.0f);
+        ImGui::InputText("##TrackName", newTrackNameInput, IM_ARRAYSIZE(newTrackNameInput));
+        ImGui::PopItemWidth();
         ImGui::SameLine();
 
         const ImGuiIO& IO = ImGui::GetIO();
         ImFont* IconFont = IO.Fonts->Fonts.size() == 1 ? IO.FontDefault : IO.Fonts->Fonts[FEATHER_FONT];
         ImGui::PushFont(IconFont);
 
-        if (ImGui::Button("\ue9c8", ImVec2(32, 32)))
+        if (ImGui::Button("\ue9c8##Track", ImVec2(32, 32)))
         {
             if (strlen(newTrackNameInput) > 0)
             {
@@ -416,36 +428,48 @@ void SAnimationTimelinePanel::RenderTrackManagementUI()
 }
 void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
 {
-    /*
-    ImGui::Text("Notify Properties");
+    ImGui::Text("Set Sound Notify Name");
 
     if (TargetSequence == nullptr) // TargetSequence는 항상 있어야 함
     {
         ImGui::TextDisabled("No sequence loaded.");
         return;
     }
+    static char newNotifyNameInput[128] = "New Sound Notify"; // 새 노티파이 이름 입력 필드
+    ImGui::PushItemWidth(200.0f);
+    ImGui::InputText("##NotifyName", newNotifyNameInput, IM_ARRAYSIZE(newNotifyNameInput));
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    const ImGuiIO& IO = ImGui::GetIO();
+    ImFont* IconFont = IO.Fonts->Fonts.size() == 1 ? IO.FontDefault : IO.Fonts->Fonts[FEATHER_FONT];
+    ImGui::PushFont(IconFont);
 
-    // "Add Notify At Current Time" 버튼 위치 이동 (예시)
-    if (ImGui::Button("Add Notify At Current Time"))
+    if (ImGui::Button("\ue9c8##SoundNotify", ImVec2(32, 32)))
     {
-        int targetTrackIdForNewNotify = -1;
-        if (LastSelectedUserTrackId != -1) // 멤버 변수로 관리l
+        if (strlen(newNotifyNameInput) > 0)
         {
-            // 유효성 검사
-            bool bIsValidTrack = false;
-            for (const auto& track : DisplayableTracks)
+            int targetTrackIdForNewNotify = -1;
+            if (LastSelectedUserTrackId != -1) // 멤버 변수로 관리
             {
-                if (track.TrackId == LastSelectedUserTrackId && track.TrackType == EEditorTimelineTrackType::AnimNotify_UserTrack)
+                // 유효성 검사
+                bool bIsValidTrack = false;
+                for (const auto& track : DisplayableTracks)
                 {
-                    bIsValidTrack = true;
-                    break;
+                    if (track.TrackId == LastSelectedUserTrackId && track.TrackType == EEditorTimelineTrackType::AnimNotify_UserTrack)
+                    {
+                        bIsValidTrack = true;
+                        break;
+                    }
                 }
+                if (bIsValidTrack)
+                    targetTrackIdForNewNotify = LastSelectedUserTrackId;
             }
-            if (bIsValidTrack) targetTrackIdForNewNotify = LastSelectedUserTrackId;
+            NotifyUtils::AddSoundNotifies(TargetSequence, newNotifyNameInput, "", CurrentTimeSeconds, targetTrackIdForNewNotify);
+            TargetSequence->SortNotifies();
+            newNotifyNameInput[0] = '\0'; // 입력 필드 초기화
         }
-        //TargetSequence->AddNotify(CurrentTimeSeconds, FName("NewEvent"), targetTrackIdForNewNotify);
-        //TargetSequence->SortNotifies();
     }
+    ImGui::PopFont();
     ImGui::Spacing();
 
     ImGuiWindowFlags PanelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
@@ -463,7 +487,7 @@ void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
 
             if (SelectedNotifyEventId != -1)
             {
-                FMockAnimNotifyEvent* currentSelectedEvent = nullptr;
+                FAnimNotifyEvent* CurrentSelectedEvent = nullptr;
                 // Find the selected notify event in the TargetSequence
                 if (TargetSequence != nullptr) // Ensure TargetSequence is not null
                 {
@@ -471,38 +495,61 @@ void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
                     {
                         if (notify.EventId == SelectedNotifyEventId)
                         {
-                            currentSelectedEvent = &notify;
+                            CurrentSelectedEvent = &notify;
                             break;
                         }
                     }
                 }
                 if (ImGui::BeginTabItem("Notify"))
                 {
-                    if (currentSelectedEvent != nullptr)
+                    if (CurrentSelectedEvent != nullptr)
                     {
                         // ID 포맷 지정자 수정: &d -> %d
-                        ImGui::Text("Name: %s ID: %d", currentSelectedEvent->NotifyName.ToString().ToAnsiString().c_str(), currentSelectedEvent->EventId);
-
-                        float triggerTime = currentSelectedEvent->TriggerTime;
+                        ImGui::Text("Name: %s ID: %d", CurrentSelectedEvent->NotifyName.ToString().ToAnsiString().c_str(), CurrentSelectedEvent->EventId);
+                        float triggerTime = CurrentSelectedEvent->TriggerTime;
                         ImGui::PushItemWidth(100); // 시간 입력 필드 너비
                         if (ImGui::DragFloat("Time (s)", &triggerTime, 0.01f, 0.0f, GetSequenceDurationSeconds(), "%.2f"))
                         {
-                            if (TargetSequence != nullptr && TargetSequence->FrameRate > 0)
+                            if (TargetSequence != nullptr && GetSequenceFrameRate() > 0)
                             {
-                                int frame = static_cast<int>(round(triggerTime * TargetSequence->FrameRate));
-                                currentSelectedEvent->TriggerTime = static_cast<float>(frame) / TargetSequence->FrameRate;
+                                int frame = static_cast<int>(round(triggerTime * GetSequenceFrameRate()));
+                                CurrentSelectedEvent->TriggerTime = static_cast<float>(frame) / GetSequenceFrameRate();
                             }
                             else
                             {
-                                currentSelectedEvent->TriggerTime = triggerTime;
+                                CurrentSelectedEvent->TriggerTime = triggerTime;
                             }
                             bIsDraggingNotify = true; // 정렬 트리거
+                        }
+                        ImGui::Text("Sound to Play:");
+                        ImGui::PushItemWidth(200); // 콤보 박스 너비
+
+                        const auto& loadedSounds = FSoundManager::GetInstance().GetLoadedSoundNames();
+                        std::string currentSoundAnsi = CurrentSelectedEvent->SoundNameToPlay.ToAnsiString();
+                        if (ImGui::BeginCombo("##SoundCombo", currentSoundAnsi.empty() ? "None" : currentSoundAnsi.c_str()))
+                        {
+                            // "None" 옵션 (사운드 재생 안 함)
+                            if (ImGui::Selectable("None", CurrentSelectedEvent->SoundNameToPlay.IsEmpty()))
+                            {
+                                CurrentSelectedEvent->SoundNameToPlay = TEXT("");
+                            }
+                            // 로드된 사운드 목록 표시
+                            for (const std::string& soundNameStd : loadedSounds)
+                            {
+                                // FString으로 변환하여 비교 및 할당 (엔진의 FString 구현 사용)
+                                FString soundNameFStr = FString(soundNameStd.c_str());
+                                if (ImGui::Selectable(soundNameStd.c_str(), CurrentSelectedEvent->SoundNameToPlay == soundNameFStr))
+                                {
+                                    CurrentSelectedEvent->SoundNameToPlay = soundNameFStr;
+                                }
+                            }
+                            ImGui::EndCombo();
                         }
                         ImGui::PopItemWidth();
 
                         ImGui::Text("Assign to Track:");
                         std::string currentAssignedTrackName = "None (Default)";
-                        int currentAssignedUiTrackId = currentSelectedEvent->UserInterfaceTrackId;
+                        int currentAssignedUiTrackId = CurrentSelectedEvent->NotifyTrackIndex;
 
                         for (const auto& track : DisplayableTracks)
                         {
@@ -518,7 +565,7 @@ void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
                         {
                             if (ImGui::Selectable("None (Default)", currentAssignedUiTrackId <= 0))
                             {
-                                currentSelectedEvent->UserInterfaceTrackId = -1;
+                                CurrentSelectedEvent->NotifyTrackIndex = -1;
                             }
                             for (const auto& track : DisplayableTracks)
                             {
@@ -526,7 +573,7 @@ void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
                                 {
                                     if (ImGui::Selectable(track.DisplayName.c_str(), currentAssignedUiTrackId == track.TrackId))
                                     {
-                                        currentSelectedEvent->UserInterfaceTrackId = track.TrackId;
+                                        CurrentSelectedEvent->NotifyTrackIndex = track.TrackId;
                                     }
                                 }
                             }
@@ -548,7 +595,6 @@ void SAnimationTimelinePanel::RenderNotifyPropertiesUI()
         ImGui::PopStyleColor(3);
         ImGui::End(); // End "Details" Window
     }
-    */
 }
 
 void SAnimationTimelinePanel::AddUserNotifyTrack(int ParentRootTrackId, const std::string& NewTrackName)
@@ -558,50 +604,59 @@ void SAnimationTimelinePanel::AddUserNotifyTrack(int ParentRootTrackId, const st
         return;
     }
 
-    FEditorTimelineTrack* parentRootTrack = nullptr;
-    int parentRootTrackIndex = -1;
+    FEditorTimelineTrack* parentRootTrackUI = nullptr;
+    int parentRootTrackUIIndex = -1;
     for (int i = 0; i < DisplayableTracks.Num(); ++i)
     {
         if (DisplayableTracks[i].TrackId == ParentRootTrackId &&
             DisplayableTracks[i].TrackType == EEditorTimelineTrackType::AnimNotify_Root)
         {
-            parentRootTrack = &DisplayableTracks[i];
-            parentRootTrackIndex = i;
+            parentRootTrackUI = &DisplayableTracks[i];
+            parentRootTrackUIIndex = i;
             break;
         }
     }
 
-    if (parentRootTrack != nullptr)
+    if (parentRootTrackUI != nullptr)
     {
         int newTrackId = FEditorTimelineTrack::NextTrackIdCounter++;
-        int insertAtIndex = parentRootTrackIndex + 1;
-        for (int i = parentRootTrackIndex + 1; i < DisplayableTracks.Num(); ++i)
+
+        FEditorTimelineTrack newUserTrackForUI(EEditorTimelineTrackType::AnimNotify_UserTrack, NewTrackName, newTrackId, ParentRootTrackId);
+
+        int insertAtIndex = parentRootTrackUIIndex + 1;
+        // 루트 트랙 바로 다음에 같은 부모를 가진 다른 사용자 트랙들이 있다면 그 뒤에 삽입
+        for (int i = parentRootTrackUIIndex + 1; i < DisplayableTracks.Num(); ++i)
         {
             if (DisplayableTracks[i].ParentTrackId == ParentRootTrackId)
             {
                 insertAtIndex = i + 1;
             }
-            else
+            else // 다른 부모를 가진 트랙이 나오면 그 앞에 삽입
             {
                 break;
             }
         }
 
-        FEditorTimelineTrack newUserTrack(EEditorTimelineTrackType::AnimNotify_UserTrack, NewTrackName, newTrackId, ParentRootTrackId);
-
         if (insertAtIndex >= DisplayableTracks.Num())
         {
-            DisplayableTracks.Add(newUserTrack);
+            DisplayableTracks.Add(newUserTrackForUI);
         }
         else
         {
-            DisplayableTracks.Insert(newUserTrack, insertAtIndex);
+            DisplayableTracks.Insert(newUserTrackForUI, insertAtIndex);
         }
 
-        parentRootTrack->bIsExpanded = true;
+        parentRootTrackUI->bIsExpanded = true;
+
+        // TargetSequence (애니메이션 애셋)에도 이 사용자 트랙 정보를 저장합니다.
+        // FEditorTimelineTrack 구조체를 UAnimSequence의 UserDefinedNotifyTracks TArray에 추가한다고 가정합니다.
+        // 이때 ID(newTrackId)와 Parent ID(ParentRootTrackId)는 UI에서 사용된 것과 동일하게 저장합니다.
+        // (만약 TargetSequence가 다른 ID 체계를 사용한다면 변환 필요)
+        TargetSequence->UserDefinedNotifyTracks.Add(
+            FEditorTimelineTrack(EEditorTimelineTrackType::AnimNotify_UserTrack, NewTrackName, newTrackId, ParentRootTrackId)
+        );
     }
 }
-
 
 void SAnimationTimelinePanel::RenderTracksRecursive(int ParentId)
 {
@@ -632,11 +687,10 @@ void SAnimationTimelinePanel::RenderTracksRecursive(int ParentId)
                 }
                 else // 일반 사용자 트랙이면 키프레임 렌더링
                 {
-                    /*
                     for (int notifyIdx = 0; notifyIdx < TargetSequence->Notifies.Num(); ++notifyIdx)
                     {
-                        FMockAnimNotifyEvent& notifyEvent = TargetSequence->Notifies[notifyIdx];
-                        if (notifyEvent.UserInterfaceTrackId == uiTrack.TrackId)
+                        FAnimNotifyEvent& notifyEvent = TargetSequence->Notifies[notifyIdx];
+                        if (notifyEvent.NotifyTrackIndex == uiTrack.TrackId)
                         {
                             // int32_t는 FrameIndexType의 기본 타입일 가능성이 높음
                             int32_t keyframeTime = static_cast<int32_t>(notifyEvent.TriggerTime * GetSequenceFrameRate());
@@ -676,7 +730,7 @@ void SAnimationTimelinePanel::RenderTracksRecursive(int ParentId)
                         // TODO: 선택된 트랙에 대한 처리 (예: 컨텍스트 메뉴)
                         // SequencerSelectedEntry = uiTrack.TrackId; // 예시
                     }
-                    */
+
                 }
                 ImGui::EndNeoTimeLine(); // BeginNeoTimelineEx가 true를 반환했으므로 호출
             }
@@ -738,7 +792,6 @@ void SAnimationTimelinePanel::RenderSequencerWidget()
         RenderTracksRecursive(-1);
 
 
-        /*
         // 삭제 로직 (Begin/End NeoSequencer 내부)
         // Delete 키는 ImGui::IsKeyPressed를 사용 (포커스된 창에서만 감지)
         // 또는 GetIO().KeysDown[]을 직접 확인 (전역적이지만, 다른 입력과 충돌 가능성)
@@ -772,7 +825,6 @@ void SAnimationTimelinePanel::RenderSequencerWidget()
             bIsDraggingNotify = false;
         }
 
-        */
         ImGui::EndNeoSequencer();
     }
 }

@@ -5,6 +5,7 @@
 #include "Animation/AnimSequence.h"
 #include "UObject/Casts.h"
 #include "Math/JungleMath.h"
+#include "SoundManager.h"
 
 UAnimSingleNodeInstance::UAnimSingleNodeInstance()
 {
@@ -20,6 +21,12 @@ void UAnimSingleNodeInstance::SetAnimationAsset(class UAnimationAsset* NewAsset,
     if (NewAsset != CurrentAsset)
     {
         CurrentAsset = NewAsset;
+        CurrentTime = 0.0f;
+        PreviousTime = 0.0f;
+        if (NotifyQueue) NotifyQueue->ActiveNotifies.Empty();
+        NotifyActionMap.Empty();
+        TriggeredNotifyIDsThisCycle.Empty();
+        FSoundManager::GetInstance().StopAllSounds();
     }
     // Proxy 사용하지 않을 듯
     //FAnimSingleNodeInstanceProxy& Proxy = GetProxyOnGameThread<FAnimSingleNodeInstanceProxy>();
@@ -106,9 +113,11 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
         return;
     }
 
+    bool bLoopedThisFrame = false;
+
     USkeleton* Skeleton = OwningComponent->GetSkeletalMesh()->Skeleton;
     UAnimSequence* CurrentSequence = Cast<UAnimSequence>(CurrentAsset);
-
+   
     if (!CurrentSequence || !Skeleton)
     {
         return;
@@ -122,6 +131,12 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
         CurrentTime += DeltaSeconds * PlayRate;
     }
 
+    if (DeltaSeconds <= FLT_EPSILON || CurrentTime <= FLT_EPSILON || PreviousTime > CurrentTime)
+    {
+        PreviousTime = CurrentTime;
+        TriggeredNotifyIDsThisCycle.Empty();
+    }
+
     const double PlayLength = CurrentSequence->GetDataModel()->GetPlayLength();
 
     if (PlayLength > 0.0)
@@ -129,22 +144,80 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
         if (bIsLooping)
         {
             CurrentTime = FMath::Fmod(CurrentTime, PlayLength);
-            if (CurrentTime < 0.0)
+        }
+        else
+        {
+            float ClampedTime = FMath::Clamp(CurrentTime, 0.0f, static_cast<float>(PlayLength));
+            if (CurrentTime != ClampedTime)
             {
-                CurrentTime += PlayLength;
+                bIsPlaying = false;
+            }
+            CurrentTime = ClampedTime;
+
+        }
+    }
+    else
+    {
+        bIsPlaying = false;
+    }
+
+    if (!bIsPlaying)
+    {
+        return;
+    }
+
+    for (const FAnimNotifyEvent& NotifyEvent : CurrentSequence->Notifies)
+    {
+        bool bShouldTrigger = false;
+        if (PreviousTime < CurrentTime) // 정방향 재생
+        {
+            if (PreviousTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= CurrentTime)
+            {
+                bShouldTrigger = true;
+            }
+        }
+        else if (PreviousTime > CurrentTime) // 루프 발생 (시간이 거꾸로 간 것처럼 보임)
+        {
+            // 이전 프레임의 끝부분 ~ 애니메이션 끝까지의 구간 OR 애니메이션 시작 ~ 현재 프레임까지의 구간
+            if ((NotifyEvent.TriggerTime > PreviousTime && NotifyEvent.TriggerTime <= PlayLength) ||
+                (NotifyEvent.TriggerTime >= 0.0f && NotifyEvent.TriggerTime <= CurrentTime))
+            {
+                bShouldTrigger = true;
+            }
+        }
+        if (false)
+        {
+            if ((NotifyEvent.TriggerTime > PreviousTime && NotifyEvent.TriggerTime <= PlayLength) ||
+                (NotifyEvent.TriggerTime >= 0.0f && NotifyEvent.TriggerTime <= CurrentTime))
+            {
+                bShouldTrigger = true;
             }
         }
         else
         {
-            CurrentTime = FMath::Clamp(CurrentTime,
-                (PlayRate < 0) ? 0.0f : 0.0f,
-                static_cast<float>(PlayLength)
-            );
-
-            if ((PlayRate > 0 && CurrentTime >= PlayLength) ||
-                (PlayRate < 0 && CurrentTime <= 0.0f))
+            if (PlayRate >= 0.f) // 정방향 또는 정지
             {
-                bIsPlaying = false;
+                if (PreviousTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= CurrentTime)
+                {
+                    bShouldTrigger = true;
+                }
+            }
+            else // 역방향
+            {
+                if (CurrentTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= PreviousTime)
+                {
+                    bShouldTrigger = true;
+                }
+            }
+        }
+
+
+        if (bShouldTrigger)
+        {
+            if (!TriggeredNotifyIDsThisCycle.Contains(NotifyEvent.EventId))
+            {
+                NotifyQueue->ActiveNotifies.Add(NotifyEvent);
+                TriggeredNotifyIDsThisCycle.Add(NotifyEvent.EventId);
             }
         }
     }
@@ -163,4 +236,7 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
 
     OwningComponent->GetSkeletalMesh()->UpdateWorldTransforms();
     OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
+    TriggerAnimNotifies(CurrentTime);
+    PreviousTime = CurrentTime;
+
 }
