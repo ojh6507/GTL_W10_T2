@@ -2,7 +2,7 @@
 #include "AnimInstance.h"
 #include "Animation/AnimTypes.h"
 #include "UObject/Casts.h"
-
+#include "SoundManager.h"
 
 UAnimInstance::UAnimInstance()
 {
@@ -49,8 +49,17 @@ void UAnimInstance::TriggerAnimNotifies(float DeltaTime)
             {
                 NotifyActionMap[NotifyToTrigger.NotifyName].Broadcast(NotifyToTrigger.NotifyName);
             }
+            TriggerSoundNotifies(NotifyToTrigger); // 사운드 노티파이 처리
         }
         NotifyQueue->ActiveNotifies.Empty(); // 처리 후 큐 비우기
+    }
+}
+
+void UAnimInstance::TriggerSoundNotifies(const FAnimNotifyEvent& NotifyToTrigger)
+{
+    if (!NotifyToTrigger.SoundNameToPlay.IsEmpty())
+    {
+        FSoundManager::GetInstance().PlaySound(NotifyToTrigger.SoundNameToPlay.ToAnsiString());
     }
 }
 

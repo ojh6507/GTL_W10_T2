@@ -1,6 +1,7 @@
 #include <fmod.hpp>
 #include <iostream>
 #include <unordered_map>
+#include <algorithm>
 #include <vector>
 #include <string>
 
@@ -68,7 +69,6 @@ public:
     void Update() {
         system->update();
 
-        // ä�� ����Ʈ���� ����� ���� ä�� ����
         activeChannels.erase(
             std::remove_if(activeChannels.begin(), activeChannels.end(),
                 [](FMOD::Channel* channel) {
@@ -101,14 +101,33 @@ public:
             masterGroup->stop();
         }
     }
-
+    const std::vector<std::string>& GetLoadedSoundNames() const
+    {
+        if (FSoundManager::GetInstance().bSoundNamesCacheDirty)
+        {
+            FSoundManager::GetInstance().RebuildLoadedSoundNamesCache();
+        }
+        return loadedSoundNamesCache;
+    }
 private:
     FSoundManager() : system(nullptr) {}
     ~FSoundManager() { Shutdown(); }
     FSoundManager(const FSoundManager&) = delete;
     FSoundManager& operator=(const FSoundManager&) = delete;
+    void RebuildLoadedSoundNamesCache()
+    {
+        loadedSoundNamesCache.clear();
+        for (const auto& pair : soundMap)
+        {
+            loadedSoundNamesCache.push_back(pair.first);
+        }
+        std::sort(loadedSoundNamesCache.begin(), loadedSoundNamesCache.end()); // 정렬
+        bSoundNamesCacheDirty = false;
 
+    }
     FMOD::System* system;
     std::unordered_map<std::string, FMOD::Sound*> soundMap;
-    std::vector<FMOD::Channel*> activeChannels; // ���� ä���� ����
+    std::vector<FMOD::Channel*> activeChannels;
+    std::vector<std::string> loadedSoundNamesCache;
+    bool bSoundNamesCacheDirty = true;
 };

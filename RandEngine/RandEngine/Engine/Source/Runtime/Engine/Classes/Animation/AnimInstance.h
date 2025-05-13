@@ -33,6 +33,7 @@ public:
     void PostEvaluate();
 
     void TriggerAnimNotifies(float DeltaTime);
+    void TriggerSoundNotifies(const FAnimNotifyEvent& NotifyToTrigger);
     //void HandleNotify(const FAnimNotifyEvent& NotifyEvent);
 
     

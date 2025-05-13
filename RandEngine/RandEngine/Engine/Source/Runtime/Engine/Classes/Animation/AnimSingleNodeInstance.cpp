@@ -5,6 +5,7 @@
 #include "Animation/AnimSequence.h"
 #include "UObject/Casts.h"
 #include "Math/JungleMath.h"
+#include "SoundManager.h"
 
 UAnimSingleNodeInstance::UAnimSingleNodeInstance()
 {
@@ -23,7 +24,9 @@ void UAnimSingleNodeInstance::SetAnimationAsset(class UAnimationAsset* NewAsset,
         CurrentTime = 0.0f;
         PreviousTime = 0.0f;
         if (NotifyQueue) NotifyQueue->ActiveNotifies.Empty();
+        NotifyActionMap.Empty();
         TriggeredNotifyIDsThisCycle.Empty();
+        FSoundManager::GetInstance().StopAllSounds();
     }
     // Proxy 사용하지 않을 듯
     //FAnimSingleNodeInstanceProxy& Proxy = GetProxyOnGameThread<FAnimSingleNodeInstanceProxy>();

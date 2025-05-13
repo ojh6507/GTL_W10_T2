@@ -160,16 +160,18 @@ struct FAnimNotifyEvent
     int EventId;
     int NotifyTrackIndex;
     float TriggerTime; // Notify time
- 
+    FString SoundNameToPlay;
     FAnimNotifyEvent()
         : NotifyName(NAME_None)
         , EventId(-1)
         , NotifyTrackIndex(INDEX_NONE)
+        , SoundNameToPlay(TEXT(""))
         , TriggerTime(0.f)
     {
     }
-    FAnimNotifyEvent(const FName& InNotifyName, int EventId, int NotifyTrackIndex, float TriggerTime)
+    FAnimNotifyEvent(const FName& InNotifyName, const FString& InSoundNameToPlay, int EventId, int NotifyTrackIndex, float TriggerTime)
         : NotifyName(InNotifyName)
+        , SoundNameToPlay(InSoundNameToPlay)
         , EventId(EventId)
         , NotifyTrackIndex(NotifyTrackIndex)
         , TriggerTime(TriggerTime)

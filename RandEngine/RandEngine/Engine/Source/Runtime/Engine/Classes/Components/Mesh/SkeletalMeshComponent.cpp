@@ -12,9 +12,9 @@ USkeletalMeshComponent::USkeletalMeshComponent()
 {
     SkeletalMesh = nullptr;
     selectedSubMeshIndex = -1;
-    //AnimScriptInstance = FObjectFactory::ConstructObject<UAnimSingleNodeInstance>(nullptr);
+    AnimScriptInstance = FObjectFactory::ConstructObject<UAnimSingleNodeInstance>(nullptr);
     // [TEMP] Animation blend test
-    AnimScriptInstance = FObjectFactory::ConstructObject<UMyAnimInstance>(nullptr);
+    //AnimScriptInstance = FObjectFactory::ConstructObject<UMyAnimInstance>(nullptr);
     AnimScriptInstance->SetOwningComponent(this);
 }
 

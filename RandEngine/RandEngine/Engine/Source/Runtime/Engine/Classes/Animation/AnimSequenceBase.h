@@ -2,12 +2,14 @@
 #include "AnimationAsset.h"
 #include "AnimData/AnimDataModel.h"
 #include "Animation/AnimTypes.h"
-
+#include "Editor/PropertyEditor/Sub/AnimationTimelineCommon.h"
 
 class UAnimSequenceBase : public UAnimationAsset
 {
     DECLARE_CLASS(UAnimSequenceBase, UAnimationAsset)
 public:
+    TArray<FEditorTimelineTrack> UserDefinedNotifyTracks;
+
     UAnimSequenceBase() = default;
   
     UAnimDataModel* GetDataModel() const;
@@ -17,10 +19,10 @@ public:
 
     TArray<struct FAnimNotifyEvent> Notifies;
 
-    void AddNotify(float TriggerTime, const FName& Name, int AssignedTrackId = -1) // 트랙 ID 인자 추가
+    void AddNotify(const FName& Name,const FString& InSoundNameToPlay, float TriggerTime, int AssignedTrackId = -1) // 트랙 ID 인자 추가
     {
         int NewEventId = NextNotifyEventId++;
-        Notifies.Add(FAnimNotifyEvent(Name, NewEventId, AssignedTrackId, TriggerTime));
+        Notifies.Add(FAnimNotifyEvent(Name, InSoundNameToPlay, NewEventId, AssignedTrackId, TriggerTime));
         // 정렬은 필요시 외부에서 수행하거나, 추가 직후가 아닌 다른 시점에 수행
     }
     void SortNotifies()
@@ -38,6 +40,10 @@ public:
             });
     }
     inline static int NextNotifyEventId;
+
+    FEditorTimelineTrack* FindOrAddUserTrack(const FString& TrackName, int RootTrackId);
+    void RemoveUserTrack(int TrackId);
+    
 protected:
     UAnimDataModel* DataModel;
 };
