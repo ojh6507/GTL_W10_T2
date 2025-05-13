@@ -33,8 +33,9 @@ public:
     //const FBoneContainer& GetRequiredBones() const { return RequiredBones; }
 
     USkeletalMeshComponent* GetSkelMeshComponent() const;
-    // [TEMP]
+    
     virtual void UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion);
+    virtual void NativeUpdateAnimation(float DeltaSeconds) {}
 
     void SetCurrentSkeleton(USkeleton* InSkeleton) { CurrentSkeleton = InSkeleton; }
 

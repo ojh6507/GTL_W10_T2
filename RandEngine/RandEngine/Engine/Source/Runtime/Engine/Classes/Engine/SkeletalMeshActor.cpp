@@ -10,7 +10,8 @@ ASkeletalMeshActor::ASkeletalMeshActor()
     SkeletalMeshComponent = AddComponent<USkeletalMeshComponent>();
     RootComponent = SkeletalMeshComponent;
     //SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Sharkry_NoTwist.fbx"));
-    SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Rumba Dancing.fbx"));
+    SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Idle.fbx"));
+    UAssetManager::Get().GetSkeletalMesh(L"Contents/Fast Run.fbx");
     // [TEMP] test for animation
     SetActorTickInEditor(true);
     CreateBoneComponents();

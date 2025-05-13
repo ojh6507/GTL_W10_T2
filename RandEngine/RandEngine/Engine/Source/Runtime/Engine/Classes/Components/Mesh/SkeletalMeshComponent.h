@@ -3,6 +3,7 @@
 
 class UAnimInstance;
 class UAnimationAsset;
+class UMyAnimInstance;
 class UAnimSingleNodeInstance;
 
 namespace EAnimationMode
@@ -38,8 +39,12 @@ public:
 
     // Methods for animation
     void SetAnimationMode(EAnimationMode::Type InAnimationMode);
+    
     EAnimationMode::Type GetAnimationMode() const;
+    
     UAnimSingleNodeInstance* GetSingleNodeInstance() const;
+    UMyAnimInstance* GetMyAnimInstance() const;
+
     void PlayAnimation(UAnimationAsset* NewAnimToPlay, bool bLooping);
     void SetAnimation(UAnimationAsset* NewAnimToPlay);
     void Play(bool bLooping);
@@ -48,7 +53,7 @@ public:
     void TickAnimation(float DeltaTime, bool bNeedsValidRootMotion);
     void TickAnimInstances(float DeltaTime, bool bNeedsValidRootMotion);
 public:
-    UAnimSingleNodeInstance* AnimScriptInstance = nullptr;
+    UAnimInstance* AnimScriptInstance = nullptr;
     uint8 bEnableAnimation : 1;
 protected:
     int selectedSubMeshIndex = -1;
