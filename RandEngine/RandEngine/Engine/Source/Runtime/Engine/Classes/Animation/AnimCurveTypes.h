@@ -110,7 +110,41 @@ struct FTransformCurve: public FAnimCurveBase
     FVectorCurve* GetVectorCurveByIndex(int32 Index);
 };
 
-// 어떤 데이터를 채워야 할지? 다가져오긴 좀
 struct FBlendedCurve
 {
+public:
+    TMap<FName, float> CurveElement;
+
+public:
+    FBlendedCurve() {}
+
+    void Set(FName CurveName, float InValue)
+    {
+        CurveElement.FindOrAdd(CurveName) = InValue;
+    }
+
+    float Get(FName CurveName) const
+    {
+        const float* FoundValue = CurveElement.Find(CurveName);
+        return FoundValue ? *FoundValue : 0.0f;
+    }
+
+    void Empty()
+    {
+        CurveElement.Empty();
+    }
+
+    void Lerp(const FBlendedCurve& Other, float Alpha)
+    {
+        // Other에 있는 모든 커브에 대해
+        for (const auto& Pair : Other.CurveElement)
+        {
+            const FName& CurveName = Pair.Key;
+            const float OtherValue = Pair.Value;
+
+            float CurrentValue = Get(CurveName);
+            float BlendedValue = FMath::Lerp(CurrentValue, OtherValue, Alpha);
+            Set(CurveName, BlendedValue);
+        }
+    }
 };

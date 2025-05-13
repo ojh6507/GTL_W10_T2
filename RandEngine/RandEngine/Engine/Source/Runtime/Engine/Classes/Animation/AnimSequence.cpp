@@ -23,6 +23,7 @@ void UAnimSequence::GetAnimationPose(FPoseContext& OutAnimationPoseData, const F
     TArray<FMatrix> LocalTransforms;
     LocalTransforms.SetNum(NumBones);
 
+    // Pose 추출
     OutAnimationPoseData.Pose.BonContainer.BoneLocalTransforms.Empty();
 
     for (int32 BoneIdx = 0; BoneIdx < NumBones; BoneIdx++)
@@ -71,4 +72,28 @@ void UAnimSequence::GetAnimationPose(FPoseContext& OutAnimationPoseData, const F
 
         OutAnimationPoseData.Pose.BonContainer.BoneLocalTransforms[BoneIndex] = JungleMath::CreateModelMatrix(Translation, Rotation, Scale);
     }
+
+    // Curve 추출
+    //OutAnimationPoseData.Curve.CurveElement.Empty();
+    //const FAnimationCurveData& AnimationCurves = DataModel->GetCurveData();
+
+    //for (const FTransformCurve& TransformCurve : AnimationCurves.TransformCurves)
+    //{
+    //    FName BaseCurveName = TransformCurve.GetName();
+    //    // [TEMP] Current time ?
+    //    FTransform EvaluatedTransform = TransformCurve.Evaluate(ExtractionContext.CurrentTime, 1.0f);
+
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_TX"))), EvaluatedTransform.GetTranslation().X);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_TY"))), EvaluatedTransform.GetTranslation().Y);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_TZ"))), EvaluatedTransform.GetTranslation().Z);
+
+    //    FRotator EulerRotation = EvaluatedTransform.GetRotation().Rotator();
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_RX"))), EulerRotation.Roll);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_RY"))), EulerRotation.Pitch);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_RZ"))), EulerRotation.Yaw);
+
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_SX"))), EvaluatedTransform.GetScale3D().X);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_SY"))), EvaluatedTransform.GetScale3D().Y);
+    //    OutAnimationPoseData.Curve.Set(FName(*(BaseCurveName.ToString() + TEXT("_SZ"))), EvaluatedTransform.GetScale3D().Z);
+    //}
 }
