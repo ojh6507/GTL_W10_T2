@@ -1974,24 +1974,33 @@ bool FManagerFBX::LoadFBXFromBinary(const FWString& FilePath, FFbxLoadResult& Ou
             uint32 BoneAnimationTrackNum;
             File.read(reinterpret_cast<char*>(&BoneAnimationTrackNum), sizeof(BoneAnimationTrackNum));
             TArray<FBoneAnimationTrack> AnimationTracks;
-            AnimationTracks.SetNum(AnimationNum);
+            AnimationTracks.SetNum(BoneAnimationTrackNum);
             for (auto& BoneAnimationTrack : AnimationTracks)
             {
-                FName BoneAnimationTrackName;
-                File.read(reinterpret_cast<char*>(&BoneAnimationTrackName), sizeof(BoneAnimationTrackName));
+                FString BoneAnimationTrackName;
+                Serializer::ReadFString(File, BoneAnimationTrackName);
                 BoneAnimationTrack = FBoneAnimationTrack();
                 BoneAnimationTrack.Name = BoneAnimationTrackName;
-                    
+
+                BoneAnimationTrack.InternalTrackData = {};
+                
+                uint32 KeyNum;
+                File.read(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
+                BoneAnimationTrack.InternalTrackData.PosKeys.SetNum(KeyNum);
                 for (auto& Key : BoneAnimationTrack.InternalTrackData.PosKeys)
                 {
                     File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
                 }
-    
+
+                File.read(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
+                BoneAnimationTrack.InternalTrackData.RotKeys.SetNum(KeyNum);
                 for (auto& Key : BoneAnimationTrack.InternalTrackData.RotKeys)
                 {
                     File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
                 }
-                    
+                
+                File.read(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
+                BoneAnimationTrack.InternalTrackData.ScaleKeys.SetNum(KeyNum);
                 for (auto& Key : BoneAnimationTrack.InternalTrackData.ScaleKeys)
                 {
                     File.read(reinterpret_cast<char*>(&Key), sizeof(Key));
@@ -2031,7 +2040,7 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
     {
         FName SkeletonName = Skeleton->GetFName();
         Serializer::WriteFString(File, SkeletonName.ToString());
-
+        
         uint32 BoneTreeNum = Skeleton->BoneTree.Num();
         File.write(reinterpret_cast<const char*>(&BoneTreeNum), sizeof(BoneTreeNum));
         for (const auto& BoneNode : Skeleton->BoneTree)
@@ -2210,17 +2219,23 @@ bool FManagerFBX::SaveFBXToBinary(const FWString& FilePath, const FFbxLoadResult
                 {
                     FName BoneAnimationTrackName = BoneAnimationTrack.Name;
                     Serializer::WriteFString(File, BoneAnimationTrackName.ToString());
-                    
+
+                    uint32 KeyNum = BoneAnimationTrack.InternalTrackData.PosKeys.Num();
+                    File.write(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
                     for (const auto& Key : BoneAnimationTrack.InternalTrackData.PosKeys)
                     {
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
                     }
-    
+
+                    KeyNum = BoneAnimationTrack.InternalTrackData.RotKeys.Num();
+                    File.write(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
                     for (const auto& Key : BoneAnimationTrack.InternalTrackData.RotKeys)
                     {
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
                     }
-                    
+
+                    KeyNum = BoneAnimationTrack.InternalTrackData.ScaleKeys.Num();
+                    File.write(reinterpret_cast<char*>(&KeyNum), sizeof(KeyNum));
                     for (const auto& Key : BoneAnimationTrack.InternalTrackData.ScaleKeys)
                     {
                         File.write(reinterpret_cast<const char*>(&Key), sizeof(Key));
