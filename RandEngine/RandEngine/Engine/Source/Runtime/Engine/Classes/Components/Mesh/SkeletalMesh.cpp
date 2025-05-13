@@ -17,13 +17,13 @@ USkeletalMesh::~USkeletalMesh()
 {
     if (SkeletalMeshRenderData == nullptr) return;
 
-    if (SkeletalMeshRenderData)
+    if (SkeletalMeshRenderData && GetOuter() ==nullptr)
     {
         SkeletalMeshRenderData->DynamicVertexBuffer->Release();
         SkeletalMeshRenderData->DynamicVertexBuffer = nullptr;
     }
 
-    if (SkeletalMeshRenderData->IndexBuffer)
+    if (SkeletalMeshRenderData->IndexBuffer&& GetOuter() ==nullptr)
     {
         SkeletalMeshRenderData->IndexBuffer->Release();
         SkeletalMeshRenderData->IndexBuffer = nullptr;
@@ -34,7 +34,19 @@ USkeletalMesh::~USkeletalMesh()
 UObject* USkeletalMesh::Duplicate(UObject* InOuter)
 {
     // TODO: Context->CopyResource를 사용해서 Buffer복사
-    return nullptr;
+    ThisClass* newMesh = Cast<ThisClass>(Super::Duplicate(InOuter));
+    newMesh->materials = materials;
+    newMesh->Skeleton->BoneTree  = Skeleton->BoneTree;
+    newMesh->Skeleton->BoneParentMap = Skeleton->BoneParentMap;
+    newMesh->Skeleton->BoneNameToIndex =Skeleton->BoneNameToIndex;
+    newMesh->Skeleton->ReferenceSkeleton = Skeleton->ReferenceSkeleton;
+    newMesh->Skeleton->LinkupCache = Skeleton->LinkupCache;
+    newMesh->Skeleton->CurrentPose = Skeleton->CurrentPose;
+    newMesh->Skeleton->CachedProcessingOrder = Skeleton->CachedProcessingOrder;
+    
+    newMesh->SkeletalMeshRenderData = SkeletalMeshRenderData;
+
+    return newMesh;
 }
 
 uint32 USkeletalMesh::GetMaterialIndex(FName MaterialSlotName) const

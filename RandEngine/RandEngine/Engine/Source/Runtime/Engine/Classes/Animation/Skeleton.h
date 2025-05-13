@@ -93,6 +93,7 @@ public:
         BoneParentMap.Empty();
         BoneNameToIndex.Empty();
     }
+    UObject* Duplicate(UObject* InOuter) override;
     // 본 추가 (인덱스 기반)
     void AddBone(const FName Name, int32 ParentIdx, const FMatrix& InGlobalBindPose, const FMatrix& InTransformMatrix);
 
@@ -132,8 +133,8 @@ public:
 
     // 스켈레톤 본 인덱스 → 메시 본 인덱스 변환
     /*int32 GetMeshBoneIndexFromSkeletonBoneIndex(const UObject* InMesh, int32 SkeletonBoneIndex);*/
-private:
     mutable TArray<int32> CachedProcessingOrder;
+private:
     mutable bool bProcessingOrderCacheDirty;
 private:
     void CalculateAndCacheProcessingOrder_Internal() const; // private 멤버 함수로 선언
