@@ -36,7 +36,6 @@ public:
 
     void SetSkeleton(USkeleton* InSkeleton);
     const USkeleton* GetSkeleton() const { return Skeleton; }
-    
 public:
     USkeleton* Skeleton;
 private:

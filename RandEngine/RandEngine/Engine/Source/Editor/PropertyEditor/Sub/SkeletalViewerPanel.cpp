@@ -10,9 +10,9 @@ void SkeletalViewerPanel::Render()
     ImVec2 WinSize = ImVec2(Width, Height);
     
     // ImGui::SetNextWindowPos(ImVec2(WinSize.x * 0.75f + 2.0f, 2));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowPos(ImVec2(0, 50));
 
-    ImGui::SetNextWindowSize(ImVec2(WinSize.x * 0.2f - 5.0f, WinSize.y));
+    ImGui::SetNextWindowSize(ImVec2(WinSize.x * 0.2f - 5.0f, WinSize.y-50));
     /* Panel Flags */
     ImGuiWindowFlags PanelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
     

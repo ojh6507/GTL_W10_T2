@@ -169,6 +169,84 @@ void FEngineLoop::Render(float DeltaTime)
     FUIManager->EndFrame();
 }
 
+void FEngineLoop::OpenAnimationViewer()
+{
+    if (AnimationViewerSubEngine->bIsShowSubWindow)
+    {
+        if (AnimationViewerWnd)
+        {
+            ::ShowWindow(AnimationViewerWnd, SW_SHOW);
+        }
+        AnimationViewerSubEngine->bIsShowSubWindow = false;
+    }
+}
+
+void FEngineLoop::OpenSkeletalViewer()
+{
+    if (SkeletalViewerSubEngine->bIsShowSubWindow)
+    {
+        if (SkeletalViewerWnd)
+        {
+            ::ShowWindow(SkeletalViewerWnd, SW_SHOW);
+        }
+        SkeletalViewerSubEngine->bIsShowSubWindow = false;
+    }
+}
+
+void FEngineLoop::SubEngineControl()
+{
+    OpenSkeletalViewer();
+    OpenAnimationViewer();
+    if (bRepositionAnimWindow)
+    {
+        AnimationViewerSubEngine->RequestShowWindow(true);
+        RECT skeletalRect = {};
+        GetWindowRect(SkeletalViewerWnd, &skeletalRect);
+        int x = skeletalRect.left;
+        int y = skeletalRect.top;
+        int width  = skeletalRect.right  - skeletalRect.left;
+        int height = skeletalRect.bottom - skeletalRect.top;
+
+        // 3) AnimationViewerWnd 이동
+        MoveWindow(
+            AnimationViewerWnd,  // 대상 윈도우
+            x, y,                // SkeletalViewerWnd와 동일한 위치
+            width, height,       // 동일한 크기
+            TRUE                 // 리페인트
+        );
+        // Z-order
+        SetWindowPos(AnimationViewerWnd,
+                     HWND_TOP,
+                     0,0,0,0,
+                     SWP_NOMOVE|SWP_NOSIZE);
+        bRepositionAnimWindow = false;
+    }
+    if (bRePositionSkeletalWindow)
+    {
+        SkeletalViewerSubEngine->RequestShowWindow(true);
+        RECT skeletalRect = {};
+        GetWindowRect(AnimationViewerWnd, &skeletalRect);
+        int x = skeletalRect.left;
+        int y = skeletalRect.top;
+        int width  = skeletalRect.right  - skeletalRect.left;
+        int height = skeletalRect.bottom - skeletalRect.top;
+
+        // 3) AnimationViewerWnd 이동
+        MoveWindow(
+            SkeletalViewerWnd,  // 대상 윈도우
+            x, y,                // SkeletalViewerWnd와 동일한 위치
+            width, height,       // 동일한 크기
+            TRUE                 // 리페인트
+        );
+        // Z-order
+        SetWindowPos(SkeletalViewerWnd,
+                     HWND_TOP,
+                     0,0,0,0,
+                     SWP_NOMOVE|SWP_NOSIZE);
+        bRePositionSkeletalWindow = false;
+    }
+}
+
 void FEngineLoop::Tick()
 {
     LARGE_INTEGER Frequency;
@@ -256,22 +334,7 @@ void FEngineLoop::Tick()
 
 
         /** Sub Window Flag */
-        if (SkeletalViewerSubEngine->bIsShowSubWindow)
-        {
-            if (SkeletalViewerWnd)
-            {
-                ::ShowWindow(SkeletalViewerWnd, SW_SHOW);
-            }
-            SkeletalViewerSubEngine->bIsShowSubWindow = false;
-        }
-        if (AnimationViewerSubEngine->bIsShowSubWindow)
-        {
-            if (AnimationViewerWnd)
-            {
-                ::ShowWindow(AnimationViewerWnd, SW_SHOW);
-            }
-            AnimationViewerSubEngine->bIsShowSubWindow = false;
-        }
+        SubEngineControl();
         do
         {
             Sleep(0);
@@ -321,19 +384,6 @@ void FEngineLoop::Input()
     {
         bLClicked = false;
     }
-    // if (GetAsyncKeyState('K') & 0x8000)
-    // {
-    //     if (!bKClicked)
-    //     {
-    //         bKClicked = true;
-    //
-    //         ToggleContentDrawer();
-    //     }
-    // }
-    // else
-    // {
-    //     bKClicked = false;
-    // }
 }
 
 void FEngineLoop::CleanupSubWindow()
@@ -402,7 +452,7 @@ void FEngineLoop::SkeletalSubWindowInit(HINSTANCE hInstance)
     SkeletalViewerWnd = CreateWindowExW(
         0, SubWindowClass, SubTitle, WS_OVERLAPPEDWINDOW, // WS_VISIBLE 제거 (초기에는 숨김)
         CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, // 원하는 크기
-        AppWnd, // 부모 윈도우를 메인 윈도우로 설정 (선택 사항)
+        nullptr, // 부모 윈도우를 메인 윈도우로 설정 (선택 사항)
         nullptr, hInstance, nullptr
     );
 
