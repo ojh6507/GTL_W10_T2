@@ -2,9 +2,13 @@
 #include "AnimSingleNodeInstance.h"
 #include "Components/Mesh/SkeletalMeshComponent.h"
 #include "Userinterface/Console.h"
+#include "Animation/AnimSequence.h"
+#include "UObject/Casts.h"
+#include "Math/JungleMath.h"
 
 UAnimSingleNodeInstance::UAnimSingleNodeInstance()
 {
+    CurrentTime = 0.0f;
 }
 
 UAnimSingleNodeInstance::~UAnimSingleNodeInstance()
@@ -70,4 +74,93 @@ bool UAnimSingleNodeInstance::IsPlaying() const
 {
     //return GetProxyOnGameThread<FAnimSingleNodeInstanceProxy>().IsPlaying();
     return bIsPlaying;
+}
+
+void UAnimSingleNodeInstance::ResetToReferencePose()
+{
+    USkeleton* Skeleton = OwningComponent->GetSkeletalMesh()->Skeleton;
+
+    const int32 NumBones = Skeleton->BoneTree.Num();
+
+    TArray<FMatrix> LocalTransforms;
+    LocalTransforms.SetNum(NumBones);
+
+    for (int32 BoneIdx = 0; BoneIdx < NumBones; BoneIdx++)
+    {
+        LocalTransforms[BoneIdx] = Skeleton->BoneTree[BoneIdx].BindTransform;
+    }
+
+    for (int32 i = 0; i < LocalTransforms.Num(); i++)
+    {
+        OwningComponent->GetSkeletalMesh()->SetBoneLocalMatrix(i, LocalTransforms[i]);
+    }
+
+    OwningComponent->GetSkeletalMesh()->UpdateWorldTransforms();
+    OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
+}
+
+void UAnimSingleNodeInstance::UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion)
+{
+    if (!CurrentAsset || !bIsPlaying)
+    {
+        return;
+    }
+
+    USkeleton* Skeleton = OwningComponent->GetSkeletalMesh()->Skeleton;
+    UAnimSequence* CurrentSequence = Cast<UAnimSequence>(CurrentAsset);
+
+    if (!CurrentSequence || !Skeleton)
+    {
+        return;
+    }
+    if (bUseExternalTime) 
+    {
+        CurrentTime = ExternalTime;
+    }
+    else 
+    {
+        CurrentTime += DeltaSeconds * PlayRate;
+    }
+   
+    const double PlayLength = CurrentSequence->GetDataModel()->GetPlayLength();
+
+    if (PlayLength > 0.0)
+    {
+        if (bIsLooping)
+        {
+            CurrentTime = FMath::Fmod(CurrentTime, PlayLength);
+            if (CurrentTime < 0.0)
+            {
+                CurrentTime += PlayLength;
+            }
+        }
+        else
+        {
+            CurrentTime = FMath::Clamp(CurrentTime,
+                (PlayRate < 0) ? 0.0f : 0.0f,
+                static_cast<float>(PlayLength)
+            );
+
+            if ((PlayRate > 0 && CurrentTime >= PlayLength) ||
+                (PlayRate < 0 && CurrentTime <= 0.0f))
+            {
+                bIsPlaying = false;
+            }
+        }
+    }
+
+    FPoseContext Pose(this);
+
+    FAnimExtractContext Extract(CurrentTime, false);
+
+    CurrentSequence->GetAnimationPose(Pose, Extract);
+
+    //LocalTransforms[GEngineLoop.Boneidx].Print();
+    for (int32 i = 0; i < Pose.Pose.BonContainer.BoneLocalTransforms.Num(); i++)
+    {
+        OwningComponent->GetSkeletalMesh()->SetBoneLocalMatrix(i, Pose.Pose.BonContainer.BoneLocalTransforms[i]);
+    }
+
+    OwningComponent->GetSkeletalMesh()->UpdateWorldTransforms();
+    OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
 }

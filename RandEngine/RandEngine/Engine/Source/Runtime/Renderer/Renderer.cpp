@@ -177,6 +177,8 @@ void FRenderer::CreateConstantBuffers()
     UINT DiffuseMultiplierSize = sizeof(FDiffuseMultiplier);
     BufferManager->CreateBufferGeneric<FDiffuseMultiplier>("FDiffuseMultiplier", nullptr, DiffuseMultiplierSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
+    UINT BonesBufferSize = sizeof(FBonesConstants);
+    BufferManager->CreateBufferGeneric<FBonesConstants>("FBonesConstants", nullptr, BonesBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
     // TODO: 함수로 분리
     ID3D11Buffer* ObjectBuffer = BufferManager->GetConstantBuffer(TEXT("FObjectConstantBuffer"));
@@ -209,6 +211,24 @@ void FRenderer::CreateCommonShader() const
         return;
     }
     
+    D3D11_INPUT_ELEMENT_DESC SkeletalMeshLayoutDesc[] = {
+        // StaticMesh 요소
+        { "POSITION",        0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  0,                             D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",           0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL",          0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT",         0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD",        0, DXGI_FORMAT_R32G32_FLOAT,       0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "MATERIAL_INDEX",  0, DXGI_FORMAT_R32_UINT,           0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+        // SkeletalMesh용 본 인덱스/가중치
+        { "BONEINDICES",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "BONEWEIGHTS",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    hr = ShaderManager->AddVertexShaderAndInputLayout(L"SkeletalMeshVertexShader", L"Shaders/SkeletalMeshVertexShader.hlsl", "mainVS", SkeletalMeshLayoutDesc, ARRAYSIZE(SkeletalMeshLayoutDesc));
+    if (FAILED(hr))
+    {
+        return;
+    }
 #pragma region UberShader
     D3D_SHADER_MACRO DefinesGouraud[] =
     {

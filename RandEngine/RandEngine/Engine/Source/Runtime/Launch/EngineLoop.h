@@ -8,7 +8,7 @@
 #include "Stats/GPUTimingManager.h"
 
 
-class FSubEngine;
+class USubEngine;
 class FSubCamera;
 class FSubRenderer;
 class USkeletalMesh;
@@ -64,8 +64,8 @@ public:
     void CleanupSubWindow();
 
     
-    FSubEngine* SkeletalViewerSubEngine;
-    FSubEngine* AnimationViewerSubEngine;
+    USubEngine* SkeletalViewerSubEngine;
+    USubEngine* AnimationViewerSubEngine;
 private:
     UImGuiManager* FUIManager;
     ImGuiContext* CurrentImGuiContext;
@@ -81,8 +81,11 @@ private:
     bool bKClicked = false;
     bool bIsExit = false;
 
+    ESkinningType SkinningType = ST_GPU;
     int32 TargetFPS = 999;
 public:
+    ESkinningType GetSkinningType() { return SkinningType; }
+    void SetSkinningType(ESkinningType InWay) { SkinningType = InWay; }
     SLevelEditor* GetLevelEditor() const { return LevelEditor; }
     UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
     

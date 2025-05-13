@@ -11,6 +11,8 @@ USkeletalMeshComponent::USkeletalMeshComponent()
 {
     SkeletalMesh = nullptr;
     selectedSubMeshIndex = -1;
+    AnimScriptInstance = FObjectFactory::ConstructObject<UAnimSingleNodeInstance>(nullptr);
+    AnimScriptInstance->SetOwningComponent(this);
 }
 
 UObject* USkeletalMeshComponent::Duplicate(UObject* InOuter)
@@ -18,6 +20,13 @@ UObject* USkeletalMeshComponent::Duplicate(UObject* InOuter)
     ThisClass* NewComponent = Cast<ThisClass>(Super::Duplicate(InOuter));
     // TODO: 이후 애니메이션 상태 등 복사 시 추가 구현
     return NewComponent;
+}
+
+void USkeletalMeshComponent::TickComponent(float DeltaTime)
+{
+    Super::TickComponent(DeltaTime);
+    // [TEMP] test for animation
+    TickAnimation(DeltaTime, true);
 }
 
 void USkeletalMeshComponent::GetProperties(TMap<FString, FString>& OutProperties) const
@@ -69,10 +78,10 @@ int USkeletalMeshComponent::CheckRayIntersection(const FVector& InRayOrigin, con
         return 0;
     }
 
-    if (!AABB.Intersect(InRayOrigin, InRayDirection, OutHitDistance))
-    {
-        return 0;
-    }
+     if (!AABB.Intersect(InRayOrigin, InRayDirection, OutHitDistance))
+     {
+         return 0;
+     }
 
     const auto* RenderData = SkeletalMesh->GetRenderData();
     const auto& Vertices = RenderData->Vertices;
@@ -151,7 +160,8 @@ void USkeletalMeshComponent::PlayAnimation(class UAnimationAsset* NewAnimToPlay,
 
 class UAnimSingleNodeInstance* USkeletalMeshComponent::GetSingleNodeInstance() const
 {
-    return Cast<UAnimSingleNodeInstance>(AnimScriptInstance);
+    return AnimScriptInstance;
+    //return Cast<UAnimSingleNodeInstance>(AnimScriptInstance);
 }
 
 void USkeletalMeshComponent::SetAnimation(UAnimationAsset* NewAnimToPlay)
@@ -185,6 +195,25 @@ void USkeletalMeshComponent::Play(bool bLooping)
     UAnimSingleNodeInstance* SingleNodeInstance = GetSingleNodeInstance();
     if (SingleNodeInstance)
     {
+        UAnimSequence* CurrentSequence = Cast<UAnimSequence>(SingleNodeInstance->CurrentAsset);
+
+        if (!CurrentSequence)
+        {
+            UE_LOG(ELogLevel::Warning, TEXT("No animation asset set currently"));
+            return;
+        }
+
+        const double PlayLength = CurrentSequence->GetDataModel()->GetPlayLength();
+
+        // [TEMP] 확인 편의를 위해 Play시 CurrentTime 초기화
+        if (SingleNodeInstance->PlayRate >= 0.0f) 
+        {
+            SingleNodeInstance->CurrentTime = 0.0f;
+        }
+        else 
+        {
+            SingleNodeInstance->CurrentTime = PlayLength;
+        }
         SingleNodeInstance->SetPlaying(true);
         SingleNodeInstance->SetLooping(bLooping);
     }
@@ -203,9 +232,11 @@ void USkeletalMeshComponent::Stop()
     }
 
     UAnimSingleNodeInstance* SingleNodeInstance = GetSingleNodeInstance();
+    
     if (SingleNodeInstance)
     {
         SingleNodeInstance->SetPlaying(false);
+        SingleNodeInstance->ResetToReferencePose();
     }
     else if (AnimScriptInstance != nullptr)
     {
@@ -226,4 +257,66 @@ bool USkeletalMeshComponent::IsPlaying() const
     }
 
     return false;
+}
+
+void USkeletalMeshComponent::TickAnimation(float DeltaTime, bool bNeedsValidRootMotion)
+{
+    if (!bEnableAnimation)
+    {
+        return;
+    }
+
+    // Recalculate the RequiredBones array, if necessary
+    /*if (!bRequiredBonesUpToDate)
+    {
+        RecalcRequiredBones(GetPredictedLODLevel());
+    }*/
+    // if curves have to be refreshed
+   /* else if (!AreRequiredCurvesUpToDate())
+    {
+        RecalcRequiredCurves();
+    }*/
+
+    if (GetSkeletalMeshAsset() != nullptr)
+    {
+        // We're about to UpdateAnimation, this will potentially queue events that we'll need to dispatch.
+        //bNeedsQueuedAnimEventsDispatched = true;
+
+        // Tick all of our anim instances
+        TickAnimInstances(DeltaTime, bNeedsValidRootMotion);
+    }
+}
+
+void USkeletalMeshComponent::TickAnimInstances(float DeltaTime, bool bNeedsValidRootMotion)
+{
+    if (!bEnableAnimation)
+    {
+        return;
+    }
+
+    // Allow animation instance to do some processing before the linked instances update
+    /*if (AnimScriptInstance != nullptr)
+    {
+        AnimScriptInstance->PreUpdateLinkedInstances(DeltaTime);
+    }*/
+
+    // We update linked instances first incase we're using either root motion or non-threaded update.
+    // This ensures that we go through the pre update process and initialize the proxies correctly.
+    //for (UAnimInstance* LinkedInstance : LinkedInstances)
+    //{
+    //    // Sub anim instances are always forced to do a parallel update 
+    //    LinkedInstance->UpdateAnimation(DeltaTime * GlobalAnimRateScale, false, UAnimInstance::EUpdateAnimationFlag::ForceParallelUpdate);
+    //}
+
+    if (AnimScriptInstance != nullptr)
+    {
+        // Tick the animation
+        //AnimScriptInstance->UpdateAnimation(DeltaTime * GlobalAnimRateScale, bNeedsValidRootMotion);
+        AnimScriptInstance->UpdateAnimation(DeltaTime, bNeedsValidRootMotion);
+    }
+
+    /*if (ShouldUpdatePostProcessInstance())
+    {
+        PostProcessAnimInstance->UpdateAnimation(DeltaTime * GlobalAnimRateScale, false);
+    }*/
 }

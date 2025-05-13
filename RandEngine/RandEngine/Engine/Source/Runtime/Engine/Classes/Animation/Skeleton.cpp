@@ -210,32 +210,33 @@ FMatrix USkeleton::CalculateSkinningMatrix(int32 BoneIdx, const FMatrix& Animati
     // 언리얼 좌표계에 맞는 원래 순서로 복원
     // 지오메트리 오프셋 → 인버스 바인드 포즈 → 애니메이션 행렬
     return GetGeometryOffsetTransform(BoneIdx) * GetInverseBindTransform(BoneIdx) * AnimationMatrix;
+    // return GetInverseBindTransform(BoneIdx) * AnimationMatrix;
 }
 
 void USkeleton::UpdateCurrentPose(const TArray<FMatrix>& LocalAnimationTransforms)
 {
     // 현재 사용안함
-    //// 로컬 변환 저장 
-    //for (int32 i = 0; i < FMath::Min(LocalAnimationTransforms.Num(), CurrentPose.LocalTransforms.Num()); ++i)
-    //{
-    //    CurrentPose.LocalTransforms[i] = LocalAnimationTransforms[i];
-    //}
+    // 로컬 변환 저장 
+    for (int32 i = 0; i < FMath::Min(LocalAnimationTransforms.Num(), CurrentPose.LocalTransforms.Num()); ++i)
+    {
+        CurrentPose.LocalTransforms[i] = LocalAnimationTransforms[i];
+    }
 
-    //// 글로벌 변환 계산
-    //for (int32 i = 0; i < CurrentPose.LocalTransforms.Num(); ++i)
-    //{
-    //    if (BoneTree[i].ParentIndex == INDEX_NONE)
-    //    {
-    //        CurrentPose.GlobalTransforms[i] = CurrentPose.LocalTransforms[i];
-    //    }
-    //    else
-    //    {
-    //        CurrentPose.GlobalTransforms[i] = CurrentPose.GlobalTransforms[BoneTree[i].ParentIndex] * CurrentPose.LocalTransforms[i];
-    //    }
+    // 글로벌 변환 계산
+    for (int32 i = 0; i < CurrentPose.LocalTransforms.Num(); ++i)
+    {
+        if (BoneTree[i].ParentIndex == INDEX_NONE)
+        {
+            CurrentPose.GlobalTransforms[i] = CurrentPose.LocalTransforms[i];
+        }
+        else
+        {
+            CurrentPose.GlobalTransforms[i] = CurrentPose.LocalTransforms[i] * CurrentPose.GlobalTransforms[BoneTree[i].ParentIndex];
+        }
 
-    //    // 스키닝 행렬 계산
-    //    CurrentPose.SkinningMatrices[i] = CalculateSkinningMatrix(i, CurrentPose.GlobalTransforms[i]);
-    //}
+        // 스키닝 행렬 계산
+        CurrentPose.SkinningMatrices[i] = CalculateSkinningMatrix(i, CurrentPose.GlobalTransforms[i]);
+    }
 }
 
 TArray<int32> USkeleton::GetProcessingOrder()

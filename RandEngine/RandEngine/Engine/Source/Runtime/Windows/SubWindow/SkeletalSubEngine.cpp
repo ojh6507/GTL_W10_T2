@@ -4,16 +4,17 @@
 #include "ImGuiSubWindow.h"
 #include "SubRenderer.h"
 #include "UnrealClient.h"
-
-FSkeletalSubEngine::FSkeletalSubEngine() : FSubEngine()
+#include "Engine/SkeletalMeshActor.h"
+#include "Actors/Cube.h"
+USkeletalSubEngine::USkeletalSubEngine()
 {
 }
 
-FSkeletalSubEngine::~FSkeletalSubEngine()
+USkeletalSubEngine::~USkeletalSubEngine()
 {
 }
 
-void FSkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDXDBufferManager* InBufferManager, UImGuiManager* InSubWindow,
+void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDXDBufferManager* InBufferManager, UImGuiManager* InSubWindow,
                                     UnrealEd* InUnrealEd)
 {
     Graphics = InGraphics;
@@ -23,24 +24,35 @@ void FSkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
     UnrealEditor = InUnrealEd;
     SubUI = new FImGuiSubWindow(hWnd, InGraphics->Device, InGraphics->DeviceContext);
     UImGuiManager::ApplySharedStyle(InSubWindow->GetContext(), SubUI->Context);
-    SubRenderer->Initialize(InGraphics, InBufferManager);
+    SubRenderer->Initialize(InGraphics, InBufferManager, this);
 
     ViewportClient = new FEditorViewportClient();
-    ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0,0,800,600));
+    ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0,0,800,600),this);
     ViewportClient->CameraReset();
+
+    EditorPlayer = FObjectFactory::ConstructObject<AEditorPlayer>(this);
+    EditorPlayer->SetCoordMode(CDM_LOCAL); 
+    SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
+
+    BasePlane = FObjectFactory::ConstructObject<ACube>(this);
+    BasePlane->SetActorScale(FVector(10,10,1));
+    BasePlane->SetActorLocation(FVector(0,0,-1));
+    SelectedBoneComponent = FObjectFactory::ConstructObject<USceneComponent>(this);
+    SelectedActor = SkeletalMeshActor;
 }
 
-void FSkeletalSubEngine::Tick(float DeltaTime)
+void USkeletalSubEngine::Tick(float DeltaTime)
 {
-    Input(DeltaTime);
     ViewportClient->Tick(DeltaTime);
+    Input(DeltaTime);
+    EditorPlayer->Tick(DeltaTime);
     Render();    
 }
 
-void FSkeletalSubEngine::Input(float DeltaTime)
+void USkeletalSubEngine::Input(float DeltaTime)
 {
-    if (::GetForegroundWindow() != *Wnd)
-        return;
+     if (::GetForegroundWindow() != *Wnd)
+         return;
     if (GetAsyncKeyState(VK_RBUTTON) & 0x8000)
     {
         if (!bRBClicked)
@@ -91,14 +103,27 @@ void FSkeletalSubEngine::Input(float DeltaTime)
             ViewportClient->CameraMoveUp(-100.f * DeltaTime);
         }
     }
+    else
+    {
+        if (GetAsyncKeyState('W') & 0x8000)
+        {
+            EditorPlayer->SetMode(CM_TRANSLATION);
+        }
+        if (GetAsyncKeyState('E') & 0x8000)
+        {
+            EditorPlayer->SetMode(CM_ROTATION);
+        }
+        if (GetAsyncKeyState('R') & 0x8000)
+        {
+            EditorPlayer->SetMode(CM_SCALE);
+        }
+    }
 }
 
-void FSkeletalSubEngine::Render()
+void USkeletalSubEngine::Render()
 {
     if (Wnd && IsWindowVisible(*Wnd) && Graphics->Device)
     {
-        Graphics->Prepare();
-        
         SubRenderer->PrepareRender(ViewportClient);
         SubRenderer->Render();
         SubRenderer->ClearRender();
@@ -109,15 +134,14 @@ void FSkeletalSubEngine::Render()
         UnrealEditor->Render(EWindowType::WT_SkeletalSubWindow);
         
         SubUI->EndFrame();
-        
         // Sub swap
         Graphics->SwapBuffer();
     }
 }
 
-void FSkeletalSubEngine::Release()
+void USkeletalSubEngine::Release()
 {
-    FSubEngine::Release();
+    USubEngine::Release();
     if (SubUI)
     {
         SubUI->Shutdown();
@@ -132,11 +156,14 @@ void FSkeletalSubEngine::Release()
     }
 }
 
-void FSkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
+void USkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
 {
     SelectedSkeletalMesh = InSkeletalMesh;
+    SkeletalMeshActor->SetSkeletalMesh(SelectedSkeletalMesh);
     if (SubRenderer)
     {
         SubRenderer->SetPreviewSkeletalMesh(SelectedSkeletalMesh);
     }
+    SkeletalMeshActor->SetSkeletalMesh(InSkeletalMesh);
+    SelectedActor = SkeletalMeshActor;
 }

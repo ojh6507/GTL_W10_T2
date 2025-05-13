@@ -31,6 +31,7 @@ FResourceMgr FEngineLoop::ResourceManager;
 FEngineLoop::FEngineLoop()
     : AppWnd(nullptr)
     , SkeletalViewerWnd(nullptr)
+    , AnimationViewerWnd(nullptr)
     , FUIManager(nullptr)
     , CurrentImGuiContext(nullptr)
     , LevelEditor(nullptr)
@@ -50,8 +51,7 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
 
     /* must be initialized before window. */
     WindowInit(hInstance);
-    SkeletalSubWindowInit(hInstance);
-    AnimationSubWindowInit(hInstance);
+
     
     UnrealEditor = new UnrealEd();
     BufferManager = new FDXDBufferManager();
@@ -62,20 +62,6 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     UnrealEditor->Initialize();
     GraphicDevice.Initialize(AppWnd);
 
-    if (SkeletalViewerWnd)
-    {
-        SkeletalViewerGD.Initialize(SkeletalViewerWnd, GraphicDevice.Device);
-        SkeletalViewerGD.ClearColor[0] = 0.025f;
-        SkeletalViewerGD.ClearColor[1] = 0.025f;
-        SkeletalViewerGD.ClearColor[2] = 0.025f;
-    }
-    if (AnimationViewerWnd)
-    {
-        AnimationViewerGD.Initialize(AnimationViewerWnd, GraphicDevice.Device);
-        AnimationViewerGD.ClearColor[0] = 0.025f;
-        AnimationViewerGD.ClearColor[1] = 0.025f;
-        AnimationViewerGD.ClearColor[2] = 0.025f;
-    }
     if (!GPUTimingManager.Initialize(GraphicDevice.Device, GraphicDevice.DeviceContext))
     {
         UE_LOG(ELogLevel::Error, TEXT("Failed to initialize GPU Timing Manager!"));
@@ -88,6 +74,7 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     EngineProfiler.RegisterStatScope(TEXT("|- TileLightCulling"), FName(TEXT("TileLightCulling_CPU")), FName(TEXT("TileLightCulling_GPU")));
     EngineProfiler.RegisterStatScope(TEXT("|- ShadowPass"), FName(TEXT("ShadowPass_CPU")), FName(TEXT("ShadowPass_GPU")));
     EngineProfiler.RegisterStatScope(TEXT("|- StaticMeshPass"), FName(TEXT("StaticMeshPass_CPU")), FName(TEXT("StaticMeshPass_GPU")));
+    EngineProfiler.RegisterStatScope(TEXT("|- SkeletalMeshPass"), FName(TEXT("SkeletalMeshPass_CPU")), FName(TEXT("SkeletalMeshPass_GPU")));
     EngineProfiler.RegisterStatScope(TEXT("|- WorldBillboardPass"), FName(TEXT("WorldBillboardPass_CPU")), FName(TEXT("WorldBillboardPass_GPU")));
     EngineProfiler.RegisterStatScope(TEXT("|- UpdateLightBufferPass"), FName(TEXT("UpdateLightBufferPass_CPU")), FName(TEXT("UpdateLightBufferPass_GPU")));
     EngineProfiler.RegisterStatScope(TEXT("|- FogPass"), FName(TEXT("FogPass_CPU")), FName(TEXT("FogPass_GPU")));
@@ -104,24 +91,36 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     PrimitiveDrawBatch.Initialize(&GraphicDevice);
     FUIManager->Initialize(AppWnd, GraphicDevice.Device, GraphicDevice.DeviceContext);
     ResourceManager.Initialize(&Renderer, &GraphicDevice);
-
     
     GEngine = FObjectFactory::ConstructObject<UEditorEngine>(nullptr);
     GEngine->Init();
-    
-    SkeletalViewerSubEngine = new FSkeletalSubEngine();
-    SkeletalViewerSubEngine->Initialize(SkeletalViewerWnd, &SkeletalViewerGD, BufferManager,FUIManager,UnrealEditor);
-    AnimationViewerSubEngine = new FAnimationSubEngine();
-    AnimationViewerSubEngine->Initialize(AnimationViewerWnd, &AnimationViewerGD, BufferManager,FUIManager,UnrealEditor);
     
     uint32 ClientWidth = 0;
     uint32 ClientHeight = 0;
     GetClientSize(ClientWidth, ClientHeight);
     LevelEditor->Initialize(ClientWidth, ClientHeight);
+
+    SkeletalSubWindowInit(hInstance);
+    AnimationSubWindowInit(hInstance);
+    if (SkeletalViewerWnd)
+    {
+        SkeletalViewerGD.Initialize(SkeletalViewerWnd, GraphicDevice.Device);
+        SkeletalViewerGD.ClearColor[0] = 0.025f;
+        SkeletalViewerGD.ClearColor[1] = 0.025f;
+        SkeletalViewerGD.ClearColor[2] = 0.025f;
+    }
+    if (AnimationViewerWnd)
+    {
+        AnimationViewerGD.Initialize(AnimationViewerWnd, GraphicDevice.Device);
+        AnimationViewerGD.ClearColor[0] = 0.025f;
+        AnimationViewerGD.ClearColor[1] = 0.025f;
+        AnimationViewerGD.ClearColor[2] = 0.025f;
+    }
+    SkeletalViewerSubEngine = FObjectFactory::ConstructObject<USkeletalSubEngine>(nullptr);
+    SkeletalViewerSubEngine->Initialize(SkeletalViewerWnd, &SkeletalViewerGD, BufferManager,FUIManager,UnrealEditor);
+    AnimationViewerSubEngine =  FObjectFactory::ConstructObject<UAnimationSubEngine>(nullptr);
+    AnimationViewerSubEngine->Initialize(AnimationViewerWnd, &AnimationViewerGD, BufferManager,FUIManager,UnrealEditor);
     
-
-
-
     FSoundManager::GetInstance().Initialize();
     FSoundManager::GetInstance().LoadSound("fishdream", "Contents/Sounds/fishdream.mp3");
     FSoundManager::GetInstance().LoadSound("sizzle", "Contents/Sounds/sizzle.mp3");
@@ -231,8 +230,10 @@ void FEngineLoop::Tick()
         
         /** Main window render */
         Render(DeltaTime);
-        SkeletalViewerSubEngine->Tick(DeltaTime);
-        AnimationViewerSubEngine->Tick(DeltaTime);
+        if (AnimationViewerSubEngine->bIsShowing)
+            AnimationViewerSubEngine->Tick(DeltaTime);
+        if (SkeletalViewerSubEngine->bIsShowing)
+            SkeletalViewerSubEngine->Tick(DeltaTime);
         /** Sub window render */
         // RenderSubWindow();
 
@@ -447,20 +448,17 @@ void FEngineLoop::AnimationSubWindowInit(HINSTANCE hInstance)
     AnimationViewerWnd = CreateWindowExW(
         0, SubWindowClass, SubTitle, WS_OVERLAPPEDWINDOW, // WS_VISIBLE 제거 (초기에는 숨김)
         CW_USEDEFAULT, CW_USEDEFAULT, 800, 600, // 원하는 크기
-        AppWnd, // 부모 윈도우를 메인 윈도우로 설정 (선택 사항)
+        nullptr, // 부모 윈도우를 메인 윈도우로 설정 (선택 사항)
         nullptr, hInstance, nullptr
     );
 
     if (!AnimationViewerWnd)
     {
-        // 오류 처리
         UE_LOG(ELogLevel::Error, TEXT("Failed to create sub window!"));
     }
     else
     {
-        // 필요할 때
-        // ShowWindow(SubAppWnd, SW_SHOW);
-        // 호출하여 표시
+
     }
 }
 
@@ -499,6 +497,7 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
         case WM_CLOSE:
             // GEngineLoop.SelectSkeletalMesh(nullptr);
             GEngineLoop.SkeletalViewerSubEngine->ViewportClient->CameraReset();
+            GEngineLoop.SkeletalViewerSubEngine->RequestShowWindow(false);
             ::ShowWindow(hWnd, SW_HIDE);
             return 0;
         
@@ -514,6 +513,7 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
     else if (hWnd == GEngineLoop.AnimationViewerWnd)
     {
         ImGui::SetCurrentContext(GEngineLoop.AnimationViewerSubEngine->SubUI->Context);
+     
         if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)) return true;
 
         /** SubWindow Msg */
@@ -539,6 +539,7 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
         case WM_CLOSE:
             // GEngineLoop.SelectSkeletalMesh(nullptr);
             GEngineLoop.AnimationViewerSubEngine->ViewportClient->CameraReset();
+            GEngineLoop.AnimationViewerSubEngine->RequestShowWindow(false);
             ::ShowWindow(hWnd, SW_HIDE);
             return 0;
         

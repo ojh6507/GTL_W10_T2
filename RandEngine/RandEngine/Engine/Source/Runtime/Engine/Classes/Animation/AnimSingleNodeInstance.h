@@ -19,11 +19,23 @@ public:
 
     bool IsPlaying() const;
 
-public:
-    UAnimationAsset* CurrentAsset;
+    void ResetToReferencePose();
 
+    virtual void UpdateAnimation(float DeltaSeconds, bool bNeedsValidRootMotion) override;
+
+    void SetUseExternalTime(bool bUse) { bUseExternalTime = bUse; }
+
+    void SetExternalTime(float NewTime) { ExternalTime = NewTime; }
+
+    float GetCurrentAnimationTime() const { return CurrentTime; }
+public:
+    UAnimationAsset* CurrentAsset = nullptr;
+    int32 frame = 0;
     bool bIsLooping;
     bool bIsPlaying;
+    float CurrentTime;
     float PlayRate;
+    bool bUseExternalTime = false;
+    float ExternalTime = 0.f;
 };
 
