@@ -2,6 +2,7 @@
 
 // #include "Engine/FbxLoader.h"
 #include "Components/Mesh/SkeletalMesh.h"
+#include "Engine/Asset/SkeletalMeshAsset.h"
 #include "ImGui/imgui_internal.h"
 #include "SubWindow/AnimationSubEngine.h"
 #include "SubWindow/SkeletalSubEngine.h"
@@ -73,7 +74,7 @@ void FDrawer::RenderContentDrawer()
     {
         if (Obj->GetOuter() != nullptr)
             continue;
-        ImGui::Selectable(GetData(Obj->GetObjectName()));
+        ImGui::Selectable(GetData(Obj->GetRenderData()->FilePath));
         
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
