@@ -4,6 +4,7 @@
 #include "UObject/ObjectTypes.h"
 
 
+class USkeletalMeshComponent;
 class UGizmoBaseComponent;
 class UGizmoArrowComponent;
 class USceneComponent;

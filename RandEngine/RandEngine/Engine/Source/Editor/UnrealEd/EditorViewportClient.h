@@ -140,7 +140,7 @@ public:
     float ViewFOV = 90.0f;
     float AspectRatio;
     float NearClip = 0.1f;
-    float FarClip = 1000.0f;
+    float FarClip = 100000.0f;
     static FVector Pivot;
     static float OrthoSize;
     ELevelViewportType ViewportType;

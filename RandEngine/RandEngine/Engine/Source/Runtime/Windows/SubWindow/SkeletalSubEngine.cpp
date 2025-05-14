@@ -180,6 +180,8 @@ void USkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
         SubRenderer->SetPreviewSkeletalMesh(SelectedSkeletalMesh);
     }
     SelectedActor = SkeletalMeshActor;
+    // SkeletalMeshActor->SetActorScale(FVector(0.01f, 0.01f, 0.01f));
+    
 }
 
 void USkeletalSubEngine::SaveSkeletalMesh()
