@@ -39,13 +39,12 @@ void UAnimSequence::GetAnimationPose(FPoseContext& OutAnimationPoseData, const F
     {
         const int32 BoneIndex = Skeleton->GetBoneIndex(Track.Name);
 
-        FString tt = BoneTracks[BoneIndex].Name.ToString();
-        FString nn = Skeleton->BoneTree[BoneIndex].Name.ToString();
-
         if (BoneIndex == INDEX_NONE)
         {
             continue;
         }
+        FString tt = BoneTracks[BoneIndex].Name.ToString();
+        FString nn = Skeleton->BoneTree[BoneIndex].Name.ToString();
 
         // 키 프레임 보간
         int32 PrevKey = FMath::Clamp(FMath::FloorToInt(FrameTime), 0, Track.InternalTrackData.PosKeys.Num() - 1);

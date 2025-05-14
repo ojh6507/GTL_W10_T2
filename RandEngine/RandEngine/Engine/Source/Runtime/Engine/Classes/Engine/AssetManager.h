@@ -79,7 +79,7 @@ public:
     const TMap<FName, FAssetInfo>& GetAssetRegistry();
 
     UMaterial* GetMaterial(const FName& Name);
-    //USkeletalMesh* GetSkeleton(const FName& Name);
+    USkeleton* GetSkeleton(const FName& Name);
     USkeletalMesh* GetSkeletalMesh(const FName& Name);
     UAnimationAsset* GetAnimationAsset(const FName& Name);
     UStaticMesh* GetStaticMesh(const FName& Name);
@@ -98,7 +98,7 @@ private:
 
     inline static TMap<FName, UMaterial*> MaterialMap;
     inline static TMap<FName, UStaticMesh*> StaticMeshMap;
-    //inline static TMap<FName, USkeleton*> SkeletonMap;
+    inline static TMap<FName, USkeleton*> SkeletonMap;
     inline static TMap<FName, USkeletalMesh*> SkeletalMeshMap;
     inline static TMap<FName, UAnimationAsset*> AnimationMap;
 };
