@@ -7,6 +7,7 @@
 #include "Engine/SkeletalMeshActor.h"
 #include "Actors/Cube.h"
 #include "Components/Mesh/SkeletalMesh.h"
+#include "Engine/AssetManager.h"
 
 USkeletalSubEngine::USkeletalSubEngine()
 {
@@ -31,15 +32,21 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
     ViewportClient = new FEditorViewportClient();
     ViewportClient->Initialize(EViewScreenLocation::EVL_MAX, FRect(0,0,800,600),this);
     ViewportClient->CameraReset();
-
+    ViewportClient->FarClip = 1000000;
     EditorPlayer = FObjectFactory::ConstructObject<AEditorPlayer>(this);
     EditorPlayer->SetCoordMode(CDM_LOCAL); 
     SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
 
     BasePlane = FObjectFactory::ConstructObject<ACube>(this);
-    BasePlane->SetActorScale(FVector(10,10,1));
+    BasePlane->SetActorScale(FVector(100,100,1));
     BasePlane->SetActorLocation(FVector(0,0,-1));
     SelectedBoneComponent = FObjectFactory::ConstructObject<USceneComponent>(this);
+
+    UnrealSphereComponent = FObjectFactory::ConstructObject<UStaticMeshComponent>(this);
+    UnrealSphereComponent->SetStaticMesh(UAssetManager::Get().GetStaticMesh(L"Contents/UnrealSphere.obj"));
+    UnrealSphereComponent->SetRelativeScale3D(FVector(-5,-5,-5));
+    UnrealSphereComponent->SetRelativeRotation(FRotator(0,0,180));
+    
     SelectedActor = SkeletalMeshActor;
 }
 
@@ -47,7 +54,7 @@ void USkeletalSubEngine::Tick(float DeltaTime)
 {
     ViewportClient->Tick(DeltaTime);
     Input(DeltaTime);
-    EditorPlayer->Tick(DeltaTime);
+    // EditorPlayer->Tick(DeltaTime);
     Render();    
 }
 
@@ -173,6 +180,8 @@ void USkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
         SubRenderer->SetPreviewSkeletalMesh(SelectedSkeletalMesh);
     }
     SelectedActor = SkeletalMeshActor;
+    // SkeletalMeshActor->SetActorScale(FVector(0.01f, 0.01f, 0.01f));
+    
 }
 
 void USkeletalSubEngine::SaveSkeletalMesh()

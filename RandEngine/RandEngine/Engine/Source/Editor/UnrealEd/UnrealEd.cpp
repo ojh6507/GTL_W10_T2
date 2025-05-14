@@ -6,6 +6,7 @@
 #include "PropertyEditor/PropertyEditorPanel.h"
 #include "PropertyEditor/Sub/SkeletalViewerPanel.h"
 #include "PropertyEditor/Sub/AnimationTimelinePanel.h"
+#include "PropertyEditor/Sub/ViewerControlPanel.h"
 
 void UnrealEd::Initialize()
 {
@@ -21,11 +22,17 @@ void UnrealEd::Initialize()
     auto SubSkeletalViewerPanel = std::make_shared<SkeletalViewerPanel>();
     SubSkeletalViewerPanel->WindowType = WT_SkeletalSubWindow;
     AddEditorPanel("SubSkeletalViewerPanel", SubSkeletalViewerPanel, EWindowType::WT_SkeletalSubWindow);
+    auto SubSkeletalViewerControlPanel = std::make_shared<ViewerControlPanel>();
+    SubSkeletalViewerControlPanel->WindowType = WT_SkeletalSubWindow;
+    AddEditorPanel("SubSkeletalViewerControlPanel", SubSkeletalViewerControlPanel, EWindowType::WT_SkeletalSubWindow);
 
     auto SubAnimationViewerPanel = std::make_shared<SAnimationTimelinePanel>();
     SubAnimationViewerPanel->WindowType = WT_AnimationSubWindow;
     auto SubSkeletalViewerPanel2 = std::make_shared<SkeletalViewerPanel>();
     SubSkeletalViewerPanel2->WindowType = WT_AnimationSubWindow;
+    auto SubAnimationViewerControlPanel = std::make_shared<ViewerControlPanel>();
+    SubAnimationViewerControlPanel->WindowType = WT_AnimationSubWindow;
+    AddEditorPanel("SubAnimationViewerControlPanel", SubAnimationViewerControlPanel, EWindowType::WT_AnimationSubWindow);
     AddEditorPanel("SubSkeletalViewerPanel", SubSkeletalViewerPanel2, EWindowType::WT_AnimationSubWindow);
     AddEditorPanel("SubAnimationViewerPanel", SubAnimationViewerPanel, EWindowType::WT_AnimationSubWindow);
  

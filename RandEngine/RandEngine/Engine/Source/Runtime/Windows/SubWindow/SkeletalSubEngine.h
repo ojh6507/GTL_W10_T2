@@ -24,6 +24,7 @@ public:
     USkeletalMesh* SelectedSkeletalMesh = nullptr ;
     ASkeletalMeshActor* SkeletalMeshActor = nullptr;
     USceneComponent* SelectedBoneComponent = nullptr ;
+    UStaticMeshComponent* UnrealSphereComponent = nullptr;
     ACube* BasePlane = nullptr;
 
     bool bGPUSkinning = true;

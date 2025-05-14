@@ -22,6 +22,7 @@ UObject* USkeletalMeshComponent::Duplicate(UObject* InOuter)
 {
     ThisClass* NewComponent = Cast<ThisClass>(Super::Duplicate(InOuter));
     // TODO: 이후 애니메이션 상태 등 복사 시 추가 구현
+    NewComponent->SkeletalMesh = Cast<USkeletalMesh>(SkeletalMesh->Duplicate(InOuter));
     return NewComponent;
 }
 

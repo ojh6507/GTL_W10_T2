@@ -270,6 +270,7 @@ void FSubRenderer::PrepareStaticRenderArr(FEditorViewportClient* Viewport)
         StaticMeshComponents.Add(Cast<USkeletalSubEngine>(Engine)->BasePlane->GetStaticMeshComponent());
     else if ( Cast<UAnimationSubEngine>(Engine))
         StaticMeshComponents.Add(Cast<UAnimationSubEngine>(Engine)->BasePlane->GetStaticMeshComponent());
+    StaticMeshComponents.Add(Cast<USkeletalSubEngine>(Engine)->UnrealSphereComponent);
 }
 
 void FSubRenderer::RenderStaticMesh()
@@ -346,7 +347,7 @@ void FSubRenderer::UpdateConstants() const
     
     /** Lit Flag */
     FLitUnlitConstants Data;
-    Data.bIsLit = true;
+    Data.bIsLit = false;
     BufferManager->UpdateConstantBuffer(TEXT("FLitUnlitConstants"), Data);
 
     /** Light */
