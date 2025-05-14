@@ -476,7 +476,7 @@ void FEditorViewportClient::PivotMoveUp(const float InValue) const
 
 void FEditorViewportClient::UpdateViewMatrix()
 {
-    if (GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::PIE && Engine == GEngine)
     {
         FMinimalViewInfo ViewInfo;
         GetViewInfo(ViewInfo);
@@ -522,7 +522,7 @@ void FEditorViewportClient::UpdateProjectionMatrix()
 {
     AspectRatio = GetViewport()->GetD3DViewport().Width / GetViewport()->GetD3DViewport().Height;
 
-    if (GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::PIE&& Engine == GEngine)
     {
         FMinimalViewInfo ViewInfo;
         GetViewInfo(ViewInfo);
