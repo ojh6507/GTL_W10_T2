@@ -94,10 +94,31 @@ UMaterial* UAssetManager::GetMaterial(const FName& Name)
     return nullptr;
 }
 
-// USkeletalMesh* UAssetManager::GetSkeleton(const FName& Name)
-// {
-//     
-// }
+USkeleton* UAssetManager::GetSkeleton(const FName& Name)
+{
+    std::filesystem::path path = std::filesystem::path(GetData(Name.ToString()));
+    FName NameWithoutExt = FName(std::filesystem::path(path).replace_extension().c_str());
+    
+    if (SkeletonMap.Contains(NameWithoutExt))
+    {
+        return SkeletonMap[NameWithoutExt];
+    }
+    if (SkeletonMap.Contains(path.c_str()))
+    {
+        return SkeletonMap[path.c_str()];
+    }
+    LoadFile(path, static_cast<uint8>(EExtensionType::Fbx));
+
+    if (SkeletonMap.Contains(NameWithoutExt))
+    {
+        return SkeletonMap[NameWithoutExt];
+    }
+    if (SkeletonMap.Contains(path.c_str()))
+    {
+        return SkeletonMap[path.c_str()];
+    }
+    return nullptr;
+}
 
 USkeletalMesh* UAssetManager::GetSkeletalMesh(const FName& Name)
 {
@@ -295,11 +316,11 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
                 
             FAssetInfo Info = AssetInfo;
             Info.AssetName = i > 0 ? FName(BaseAssetName + FString::FromInt(i)) : FName(BaseAssetName);
-            Info.AssetType = EAssetType::SkeletalMesh;
+            Info.AssetType = EAssetType::Skeleton;
             AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
 
             FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
-            // SkeletonMap.Add(Key, Skeleton);
+            SkeletonMap.Add(Key, Skeleton);
         }
         
         // 로드된 SkeletalMesh 등록
