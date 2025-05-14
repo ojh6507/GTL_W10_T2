@@ -4,6 +4,7 @@
 #include "SoundManager.h"
 #include "InputCore/InputCoreTypes.h"
 #include "Camera/CameraComponent.h"
+#include "Contents/Actors/ARandCharacter.h"
 #include "Contents/Actors/Fish.h"
 #include "Contents/Actors/ItemActor.h"
 #include "Engine/Engine.h"
@@ -92,8 +93,7 @@ void AGameMode::StartMatch()
         }
     }
 
-    AFish* Fish = Cast<AFish>(GEngine->ActiveWorld->GetMainPlayer());
-    Fish->Reset();
+    ARandCharacter* Fish = Cast<ARandCharacter>(GEngine->ActiveWorld->GetMainPlayer());
     // GEngine->ActiveWorld->GetMainPlayer()->SetActorLocation(FVector(0, 0, 10));
     GEngine->ActiveWorld->GetPlayerController()->Possess(GEngine->ActiveWorld->GetMainPlayer());
     
