@@ -18,10 +18,12 @@ public:
     
     void AddEditorPanel(const FString& PanelId, const std::shared_ptr<UEditorPanel>& EditorPanel, EWindowType WindowType= EWindowType::WT_Main);
     std::shared_ptr<UEditorPanel> GetEditorPanel(const FString& PanelId);
-    std::shared_ptr<UEditorPanel> GetSubEditorPanel(const FString& PanelId);
+    std::shared_ptr<UEditorPanel> GetSubSkeletalPanel(const FString& PanelId);
+    std::shared_ptr<UEditorPanel> GetSubAnimationPanel(const FString& PanelId);
 
 private:
     TMap<FString, std::shared_ptr<UEditorPanel>> Panels;
     TMap<FString, std::shared_ptr<UEditorPanel>> SkeletalSubPanels;
     TMap<FString, std::shared_ptr<UEditorPanel>> AnimationSubPanels;
 };
+

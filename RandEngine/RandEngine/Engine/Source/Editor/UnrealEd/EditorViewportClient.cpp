@@ -15,6 +15,7 @@
 #include "LevelEditor/SLevelEditor.h"
 #include "SlateCore/Input/Events.h"
 #include "SubWindow/SubEngine.h"
+#include "UserInterface/Drawer.h"
 
 FVector FEditorViewportClient::Pivot = FVector(0.0f, 0.0f, 0.0f);
 float FEditorViewportClient::OrthoSize = 10.0f;
@@ -283,19 +284,40 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
             }
             break;
         }
-        // case 'L':
-        // {
-        //     if (InKeyEvent.IsLeftControlDown())
-        //     {
-        //         UE_LOG(ELogLevel::Display, "CTRL + Space");
-        //         GEngineLoop.ToggleContentDrawer();
-        //     }
-        //     else
-        //     {
-        //         EdEngine->GetEditorPlayer()->AddControlMode();
-        //     }
-        //     break;
-        // }
+        case VK_SPACE:
+        {
+            if (InKeyEvent.IsLeftControlDown())
+            {
+                UE_LOG(ELogLevel::Display, "CTRL + Space");
+
+                if (Engine == GEngine)
+                {
+                    FDrawer* Drawer = static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetEditorPanel("Drawer").get());
+                    Drawer->Toggle();
+                }
+                else if (Engine == GEngineLoop.SkeletalViewerSubEngine)
+                    static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubSkeletalPanel("Drawer").get())->Toggle();
+                else if (Engine == GEngineLoop.AnimationViewerSubEngine)
+                    static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubAnimationPanel("Drawer").get())->Toggle();
+            }
+            else
+            {
+                EdEngine->GetEditorPlayer()->AddControlMode();
+            }
+            break;
+        }
+        case 'L':
+        {
+            if (Engine == GEngine)
+            {
+                FDrawer* Drawer = static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetEditorPanel("Drawer").get());
+                Drawer->Toggle();
+            }
+            else if (Engine == GEngineLoop.SkeletalViewerSubEngine)
+                static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubSkeletalPanel("Drawer").get())->Toggle();
+            else if (Engine == GEngineLoop.AnimationViewerSubEngine)
+                static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubAnimationPanel("Drawer").get())->Toggle();
+        }
         default:
             break;
         }

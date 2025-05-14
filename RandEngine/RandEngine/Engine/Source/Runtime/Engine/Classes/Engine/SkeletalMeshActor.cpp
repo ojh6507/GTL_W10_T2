@@ -15,7 +15,7 @@ ASkeletalMeshActor::ASkeletalMeshActor()
     SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Jump.fbx"));
     //UAssetManager::Get().GetSkeletalMesh(L"Contents/Fast Run.fbx");
     //UAssetManager::Get().GetSkeletalMesh(L"Contents/Silly Dancing.fbx");
-    SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/RealSharkry.fbx"));
+    SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Shoot Rifle.fbx"));
     // [TEMP] test for animation
     SetActorTickInEditor(true);
     CreateBoneComponents();
