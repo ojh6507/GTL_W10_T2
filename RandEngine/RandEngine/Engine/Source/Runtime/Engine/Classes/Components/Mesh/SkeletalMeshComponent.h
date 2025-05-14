@@ -58,7 +58,7 @@ public:
     // [TEMP]
     UStateMachineAnimInstance* AnimSMInstance = nullptr;
 
-    uint8 bEnableAnimation : 1;
+    uint8 bEnableAnimation = 1;
 protected:
     int selectedSubMeshIndex = -1;
 

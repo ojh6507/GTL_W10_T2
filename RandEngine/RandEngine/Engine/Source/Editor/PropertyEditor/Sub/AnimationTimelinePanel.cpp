@@ -209,7 +209,8 @@ void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
         }
     }
     SelectedComponent->GetSingleNodeInstance()->SetExternalTime(CurrentTimeSeconds);
-
+    SelectedComponent->GetSingleNodeInstance()->SetPlayRate(PlaybackSpeed);
+   
 
 }
 

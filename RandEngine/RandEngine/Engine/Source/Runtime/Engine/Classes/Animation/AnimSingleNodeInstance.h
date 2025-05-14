@@ -24,6 +24,7 @@ public:
     void SetUseExternalTime(bool bUse) { bUseExternalTime = bUse; }
 
     void SetExternalTime(float NewTime) { ExternalTime = NewTime; }
+    void SetPlayRate(float InPlayRate) { PlayRate = InPlayRate; }
 
     float GetCurrentAnimationTime() const { return CurrentTime; }
 

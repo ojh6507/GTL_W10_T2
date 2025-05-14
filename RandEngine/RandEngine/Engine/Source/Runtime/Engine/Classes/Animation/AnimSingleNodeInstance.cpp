@@ -113,15 +113,7 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
         return;
     }
 
-    bool bLoopedThisFrame = false;
 
-    USkeleton* Skeleton = OwningComponent->GetSkeletalMesh()->Skeleton;
-    UAnimSequence* CurrentSequence = Cast<UAnimSequence>(CurrentAsset);
-   
-    if (!CurrentSequence || !Skeleton)
-    {
-        return;
-    }
     if (bUseExternalTime)
     {
         CurrentTime = ExternalTime;
@@ -130,113 +122,132 @@ void UAnimSingleNodeInstance::NativeUpdateAnimation(float DeltaSeconds)
     {
         CurrentTime += DeltaSeconds * PlayRate;
     }
+    UAnimSequence* CurrentSequence = Cast<UAnimSequence>(CurrentAsset);
+    const double PlayLengthD = CurrentSequence ? CurrentSequence->GetDataModel()->GetPlayLength() : 0.0;
+    const float ActualPlayLength = static_cast<float>(PlayLengthD);
 
-    if (DeltaSeconds <= FLT_EPSILON || CurrentTime <= FLT_EPSILON || PreviousTime > CurrentTime)
+    if (ActualPlayLength > 0.0f)
     {
-        PreviousTime = CurrentTime;
         TriggeredNotifyIDsThisCycle.Empty();
-    }
-
-    const double PlayLength = CurrentSequence->GetDataModel()->GetPlayLength();
-
-    if (PlayLength > 0.0)
-    {
         if (bIsLooping)
         {
-            CurrentTime = FMath::Fmod(CurrentTime, PlayLength);
+            CurrentTime = FMath::Fmod(CurrentTime, ActualPlayLength);
+            if (CurrentTime < 0.0f)
+            {
+                CurrentTime += ActualPlayLength;
+            }
         }
         else
         {
-            float ClampedTime = FMath::Clamp(CurrentTime, 0.0f, static_cast<float>(PlayLength));
-            if (CurrentTime != ClampedTime)
+            float ClampedTime = FMath::Clamp(CurrentTime, 0.0f, ActualPlayLength);
+            if (FMath::Abs(CurrentTime - ClampedTime) > KINDA_SMALL_NUMBER && !bUseExternalTime)
             {
                 bIsPlaying = false;
             }
             CurrentTime = ClampedTime;
-
         }
     }
     else
     {
+        CurrentTime = 0.0f;
         bIsPlaying = false;
     }
 
-    if (!bIsPlaying)
+    if (!bIsPlaying && !bUseExternalTime)
     {
+        PreviousTime = CurrentTime;
         return;
     }
 
-    for (const FAnimNotifyEvent& NotifyEvent : CurrentSequence->Notifies)
+    if (CurrentSequence)
     {
-        bool bShouldTrigger = false;
-        if (PreviousTime < CurrentTime) // 정방향 재생
+        for (const FAnimNotifyEvent& NotifyEvent : CurrentSequence->Notifies)
         {
-            if (PreviousTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= CurrentTime)
+            bool bShouldTrigger = false;
+            const float NTime = NotifyEvent.TriggerTime;
+
+            if (PlayRate >= 0.f)
             {
-                bShouldTrigger = true;
+                if (PreviousTime <= CurrentTime)
+                {
+                    if (NTime >= PreviousTime && NTime < CurrentTime)
+                    {
+                        bShouldTrigger = true;
+                    }
+                }
+                else
+                {
+                    if ((NTime >= PreviousTime && NTime < ActualPlayLength) ||
+                        (NTime >= 0.0f && NTime < CurrentTime))
+                    {
+                        bShouldTrigger = true;
+                    }
+                }
             }
-        }
-        else if (PreviousTime > CurrentTime) // 루프 발생 (시간이 거꾸로 간 것처럼 보임)
-        {
-            // 이전 프레임의 끝부분 ~ 애니메이션 끝까지의 구간 OR 애니메이션 시작 ~ 현재 프레임까지의 구간
-            if ((NotifyEvent.TriggerTime > PreviousTime && NotifyEvent.TriggerTime <= PlayLength) ||
-                (NotifyEvent.TriggerTime >= 0.0f && NotifyEvent.TriggerTime <= CurrentTime))
+            else
             {
-                bShouldTrigger = true;
+                if (CurrentTime < PreviousTime)
+                {
+                    if (PreviousTime >= NTime && CurrentTime < NTime)
+                    {
+                        bShouldTrigger = true;
+                    }
+                }
+                else if (bIsLooping) // 루프
+                {
+                    if ((NTime > CurrentTime) || (NTime <= PreviousTime))
+                    {
+                        bShouldTrigger = true;
+                    }
+                }
             }
-        }
-        if (false)
-        {
-            if ((NotifyEvent.TriggerTime > PreviousTime && NotifyEvent.TriggerTime <= PlayLength) ||
-                (NotifyEvent.TriggerTime >= 0.0f && NotifyEvent.TriggerTime <= CurrentTime))
+
+            if (CurrentTime == PreviousTime)
             {
-                bShouldTrigger = true;
-            }
-        }
-        else
-        {
-            if (PlayRate >= 0.f) // 정방향 또는 정지
-            {
-                if (PreviousTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= CurrentTime)
+                if (NTime == CurrentTime)
                 {
                     bShouldTrigger = true;
                 }
             }
-            else // 역방향
-            {
-                if (CurrentTime < NotifyEvent.TriggerTime && NotifyEvent.TriggerTime <= PreviousTime)
-                {
+            else if (NTime == CurrentTime) {
+                if (PlayRate >= 0.f && PreviousTime < CurrentTime) {
+                    bShouldTrigger = true;
+                }
+                else if (PlayRate < 0.f && PreviousTime > CurrentTime) {
                     bShouldTrigger = true;
                 }
             }
-        }
 
-
-        if (bShouldTrigger)
-        {
-            if (!TriggeredNotifyIDsThisCycle.Contains(NotifyEvent.EventId))
+            if (bShouldTrigger)
             {
-                NotifyQueue->ActiveNotifies.Add(NotifyEvent);
-                TriggeredNotifyIDsThisCycle.Add(NotifyEvent.EventId);
+                if (!TriggeredNotifyIDsThisCycle.Contains(NotifyEvent.EventId))
+                {
+                    if (NotifyQueue)
+                    {
+                        NotifyQueue->ActiveNotifies.Add(NotifyEvent);
+                    }
+                    TriggeredNotifyIDsThisCycle.Add(NotifyEvent.EventId);
+                }
             }
         }
     }
 
-    FPoseContext Pose(this);
-
-    FAnimExtractContext Extract(CurrentTime, false);
-
-    CurrentSequence->GetAnimationPose(Pose, Extract);
-
-    //LocalTransforms[GEngineLoop.Boneidx].Print();
-    for (int32 i = 0; i < Pose.Pose.BonContainer.BoneLocalTransforms.Num(); i++)
+    if (CurrentSequence && OwningComponent && OwningComponent->GetSkeletalMesh())
     {
-        OwningComponent->GetSkeletalMesh()->SetBoneLocalMatrix(i, Pose.Pose.BonContainer.BoneLocalTransforms[i]);
+        FPoseContext Pose(this);
+        FAnimExtractContext Extract(CurrentTime, false);
+        CurrentSequence->GetAnimationPose(Pose, Extract);
+
+        for (int32 i = 0; i < Pose.Pose.BonContainer.BoneLocalTransforms.Num(); i++)
+        {
+            OwningComponent->GetSkeletalMesh()->SetBoneLocalMatrix(i, Pose.Pose.BonContainer.BoneLocalTransforms[i]);
+        }
+
+        OwningComponent->GetSkeletalMesh()->UpdateWorldTransforms();
+        OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
     }
 
-    OwningComponent->GetSkeletalMesh()->UpdateWorldTransforms();
-    OwningComponent->GetSkeletalMesh()->UpdateAndApplySkinning();
     TriggerAnimNotifies(CurrentTime);
-    PreviousTime = CurrentTime;
 
+    PreviousTime = CurrentTime;
 }
