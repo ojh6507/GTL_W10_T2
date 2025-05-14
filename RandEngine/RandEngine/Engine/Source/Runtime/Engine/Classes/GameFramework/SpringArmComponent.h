@@ -18,6 +18,8 @@ public:
 
     virtual void TickComponent(float DeltaTime) override;
 
+    UObject* Duplicate(UObject* InOuter) override;
+    
     void UpdateDesiredArmLocation(bool bDoTrace, bool bDoLocationLag, bool bDoRotationLag, float DeltaTime);
 
     FVector BlendLocations(const FVector& DesiredArmLocation, const FVector& TraceHitLocation, bool bHitSomething, float DeltaTime);
@@ -28,6 +30,8 @@ public:
 public:
     FRotator GetDesiredRotation() const;
     FRotator GetTargetRotation() const;
+
+    
 private:
     FVector TargetOffset;           // 월드 공간 오프셋
     float TargetArmLength;          // 카메라와의 거리

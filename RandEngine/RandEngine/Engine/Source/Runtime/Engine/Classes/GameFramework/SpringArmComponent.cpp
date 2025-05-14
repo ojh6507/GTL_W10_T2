@@ -10,19 +10,19 @@
 
 USpringArmComponent::USpringArmComponent()
 {
-    // SetRelativeRotation(FRotator(FVector(-3, -14, -5)));
 
     TargetArmLength = 5.f;
-    TargetOffset = FVector(-13.f, 0.f, 4.f); // 부모에 대한 상대 위치
-
+    TargetOffset = FVector(-14.f, 0.0f, 20.f); // 부모에 대한 상대 위치
     bUsePawnControlRotation = true;
     bDoCollisionTest = false;
+    SetRelativeRotation(FRotator(-8, 0, 0));
 
-    bInheritPitch = bInheritYaw = bInheritRoll = true;
-    bEnableCameraLag = true;
+    bInheritPitch = bInheritYaw = bInheritRoll = false;
+    bEnableCameraLag = false;
     bEnableCameraRotationLag = true;
-    bUseCameraLagSubstepping = true;
+    bUseCameraLagSubstepping = false;
 
+    bInheritYaw= true;
     ProbeSize = 0.3f;
     CameraLagSpeed = 10.f;
     CameraRotationLagSpeed = 10.f;
@@ -83,6 +83,16 @@ void USpringArmComponent::TickComponent(float DeltaTime)
 
     //Super::TickComponent(DeltaTime);
     UpdateDesiredArmLocation(bDoCollisionTest, bEnableCameraLag, bEnableCameraRotationLag, DeltaTime);
+}
+
+UObject* USpringArmComponent::Duplicate(UObject* InOuter)
+{
+    ThisClass* NewComponent = Cast<ThisClass>(Super::Duplicate(InOuter));  
+    NewComponent->TargetArmLength = TargetArmLength;
+    NewComponent->TargetOffset = TargetOffset;
+    NewComponent->bUsePawnControlRotation = true;
+
+    return NewComponent;
 }
 
 void USpringArmComponent::UpdateDesiredArmLocation(bool bDoTrace, bool bDoLocationLag, bool bDoRotationLag, float DeltaTime)
