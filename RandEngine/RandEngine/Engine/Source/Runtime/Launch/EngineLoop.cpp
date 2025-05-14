@@ -426,7 +426,7 @@ void FEngineLoop::WindowInit(HINSTANCE hInstance)
 void FEngineLoop::SkeletalSubWindowInit(HINSTANCE hInstance)
 {
     WCHAR SubWindowClass[] = L"JungleSkeletalWindowClass";
-    WCHAR SubTitle[] = L"Skeleton Mesh Viewer";
+    WCHAR SubTitle[] = L"Viewer";
 
     WNDCLASSEXW wcexSub = {}; // WNDCLASSEXW 사용 권장
     wcexSub.cbSize = sizeof(WNDCLASSEX);
@@ -438,7 +438,7 @@ void FEngineLoop::SkeletalSubWindowInit(HINSTANCE hInstance)
     wcexSub.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcexSub.lpszMenuName = nullptr;
     wcexSub.lpszClassName = SubWindowClass;
-
+    wcexSub.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
     if (!RegisterClassExW(&wcexSub))
     {
         // 오류 처리
@@ -472,7 +472,7 @@ void FEngineLoop::SkeletalSubWindowInit(HINSTANCE hInstance)
 void FEngineLoop::AnimationSubWindowInit(HINSTANCE hInstance)
 {
     WCHAR SubWindowClass[] = L"JungleAnimationWindowClass";
-    WCHAR SubTitle[] = L"Animation Viewer";
+    WCHAR SubTitle[] = L"Viewer";
 
     WNDCLASSEXW wcexSub = {}; // WNDCLASSEXW 사용 권장
     wcexSub.cbSize = sizeof(WNDCLASSEX);
@@ -484,7 +484,7 @@ void FEngineLoop::AnimationSubWindowInit(HINSTANCE hInstance)
     wcexSub.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcexSub.lpszMenuName = nullptr;
     wcexSub.lpszClassName = SubWindowClass;
-
+    wcexSub.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
     if (!RegisterClassExW(&wcexSub))
     {
         // 오류 처리

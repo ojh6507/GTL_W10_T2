@@ -9,7 +9,10 @@
 
 void ViewerControlPanel::Render()
 {
-        /* Pre Setup */
+    /* Pre Setup */
+    const ImGuiIO& IO = ImGui::GetIO();
+    ImFont* IconFont = IO.Fonts->Fonts.size() == 1 ? IO.FontDefault : IO.Fonts->Fonts[FEATHER_FONT];
+    constexpr ImVec2 IconSize = ImVec2(32, 32);
     ImVec2 WinSize = ImVec2(Width, Height);
     
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -25,44 +28,60 @@ void ViewerControlPanel::Render()
     /* Render Start */
     if (ImGui::Begin("Control Panel", nullptr, PanelFlags))
     {
-        if (ImGui::Button("Save \ue9d6",ImVec2(100,30)))
+        ImGui::PushFont(IconFont);
+
+
+        if (ImGui::Button("\ue9d6",IconSize))
         {
             SkeletalSubEngine->SaveSkeletalMesh();
         }
-        ImGui::SameLine();
-        if (ImGui::Button("SkeletalMesh Viewer",ImVec2(100,30)))
+        ImGui::PopFont();
+
+        ImGui::SameLine(0,Width *0.8);
+        constexpr ImVec4 ActiveColor = ImVec4(0.00f, 0.0f, 0.40f, 1.0f);
+        if (WindowType == WT_SkeletalSubWindow)
+            ImGui::PushStyleColor(ImGuiCol_Button, ActiveColor);
+        if (ImGui::Button("SkeletalMesh Viewer",ImVec2(150,30)))
         {
             if (WindowType == WT_AnimationSubWindow)
             {
                 GEngineLoop.bRePositionSkeletalWindow = true;
             }
         }
+        if (WindowType == WT_SkeletalSubWindow)
+            ImGui::PopStyleColor();
+
         ImGui::SameLine();
-        if (ImGui::Button("Animation Viewer",ImVec2(100,30)))
+        if (WindowType == WT_AnimationSubWindow)
+            ImGui::PushStyleColor(ImGuiCol_Button, ActiveColor);
+        if (ImGui::Button("Animation Viewer",ImVec2(150,30)))
         {
             if (WindowType == WT_SkeletalSubWindow)
             {
                 GEngineLoop.bRepositionAnimWindow = true;
             }
         }
+        if (WindowType == WT_AnimationSubWindow)
+            ImGui::PopStyleColor();
         ImGui::End();
     }
-    
-    // ImGui::SameLine();
-    // CreateFlagButton();
-    // ImGui::SameLine();
-    //
-    // ImGui::PushFont(IconFont);
-    // /* Get Window Content Region */
-    // const float ContentWidth = ImGui::GetWindowContentRegionMax().x;
-    // /* Move Cursor X Position */
-    // if (Width >= 880.f)
+    // if (ImGui::Begin("Control Panel", nullptr, PanelFlags))
     // {
-    //     ImGui::SetCursorPosX(ContentWidth - (IconSize.x * 3.0f + 16.0f));
+    //     ImGui::SameLine();
+    //     CreateFlagButton();
+    //     ImGui::SameLine();
+    //     /* Get Window Content Region */
+    //     const float ContentWidth = ImGui::GetWindowContentRegionMax().x;
+    //     /* Move Cursor X Position */
+    //     if (Width >= 880.f)
+    //     {
+    //         ImGui::SetCursorPosX(ContentWidth - (IconSize.x * 3.0f + 16.0f));
+    //     }
+    //     ImGui::PushFont(IconFont);
+    //     CreateSRTButton(IconSize);
+    //     ImGui::PopFont();
+    //     ImGui::End();
     // }
-    // CreateSRTButton(IconSize);
-    // ImGui::PopFont();
-
 }
 
 void ViewerControlPanel::OnResize(HWND hWnd)
@@ -150,10 +169,6 @@ void ViewerControlPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
     }
 }
 
-void ViewerControlPanel::CraeteViewerButton(ImVec2 ButtonSize)
-{
-    
-}
 
 void ViewerControlPanel::CreateFlagButton()
 {
