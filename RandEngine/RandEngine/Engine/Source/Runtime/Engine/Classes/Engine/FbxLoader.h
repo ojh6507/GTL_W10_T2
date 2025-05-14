@@ -61,8 +61,10 @@ struct FFBXLoader
     
     static bool ParseFBX(const FString& FBXFilePath, FBX::FBXInfo& OutFBXInfo, TArray<UAnimSequence*>& OutAnimSequenceArray);
 
+    static bool ExtractSkeleton(const FBX::FBXInfo& FullFBXInfo, USkeleton* OutSkeleton);
+    
     // Convert the Raw data to Cooked data (FSkeletalMeshRenderData)
-    static bool ConvertToSkeletalMesh(const TArray<FBX::MeshRawData>& RawMeshData, const FBX::FBXInfo& FullFBXInfo, FSkeletalMeshRenderData& OutSkeletalMesh, USkeleton* OutSkeleton);
+    static bool ConvertToSkeletalMesh(const FBX::FBXInfo& FullFBXInfo, FSkeletalMeshRenderData& OutSkeletalMesh, const USkeleton* OutSkeleton);
 
     static bool CreateTextureFromFile(const FWString& Filename);
 
@@ -78,7 +80,7 @@ public:
     static bool LoadFBX(const FString& InFilePath, FFbxLoadResult& OutResult);
 
 private:
-    static FSkeletalMeshRenderData* LoadFBXSkeletalMeshAsset(const FString& PathFileName, USkeleton* OutSkeleton, TArray<UAnimSequence*>& OutAnimSequenceArray, TArray<UMaterial*>&
+    static bool LoadFBXSkeletalMeshAsset(const FString& PathFileName, FSkeletalMeshRenderData*& OutSkeletalMeshRenderData, USkeleton*& OutSkeleton, TArray<UAnimSequence*>& OutAnimSequenceArray, TArray<UMaterial*>&
                                                              OutMaterials);
     static void CombineMaterialIndex(FSkeletalMeshRenderData& OutFSkeletalMesh);
     

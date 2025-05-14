@@ -162,7 +162,7 @@ void AEditorPlayer::PickActor(const FVector& pickPosition)
     float minDistance = FLT_MAX;
     for (const auto iter : TObjectRange<UPrimitiveComponent>())
     {
-        if(GetOuter() != GEngine)
+        if(iter->GetWorld() != GEngine->ActiveWorld->GetWorld())
             continue;
         UPrimitiveComponent* pObj;
         if (iter->IsA<UPrimitiveComponent>() || iter->IsA<ULightComponentBase>())
@@ -198,8 +198,8 @@ void AEditorPlayer::PickActor(const FVector& pickPosition)
     {
         if (GEngine == GetOuter())
         {
-            // Cast<UEditorEngine>(GEngine)->SelectActor(Possible->GetOwner());
-            // Cast<UEditorEngine>(GEngine)->SelectComponent(Possible);
+            Cast<UEditorEngine>(GEngine)->SelectActor(Possible->GetOwner());
+            Cast<UEditorEngine>(GEngine)->SelectComponent(Possible);
         }
         else
         {

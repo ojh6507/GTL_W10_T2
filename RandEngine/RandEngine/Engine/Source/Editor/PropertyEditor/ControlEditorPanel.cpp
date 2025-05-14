@@ -28,6 +28,7 @@
 #include "Actors/CubeActor.h"
 #include "Actors/SphereActor.h"
 #include "Actors/CapsuleActor.h"
+#include "Contents/Actors/ARandCharacter.h"
 #include "GameFramework/PlayerController.h"
 #include "Contents/Actors/Fish.h"
 #include "Contents/Actors/ItemActor.h"
@@ -331,12 +332,9 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
             {.Label = "BoxCol", .OBJ = OBJ_BOX_COLLISION},
             {.Label = "SphereCol", .OBJ = OBJ_SPHERE_COLLISION},
             {.Label = "CapsuleCol", .OBJ = OBJ_CAPSULE_COLLISION},
-            {.Label = "Fish", .OBJ = OBJ_FISH},
-            {.Label = "Platform", .OBJ = OBJ_PLATFORM},
-            {.Label = "GoalPlatform", .OBJ = OBJ_GOALPLATFORM},
-            {.Label = "Coin", .OBJ = OBJ_COIN},
-            {.Label = "TriggerBox", .OBJ = OBJ_TRIGGERBOX},
             {.Label = "FBX", .OBJ = OBJ_FBX},
+{.Label = "SHARKRY", .OBJ = OBJ_SHARKRY},
+
         };
 
         for (const auto& primitive : primitives)
@@ -445,31 +443,15 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
                     SpawnedActor->SetActorTickInEditor(true); // TODO: 콜리전 테스트 용도
                     break;
                 }
-                case OBJ_FISH:
-                    SpawnedActor = World->SpawnActor<AFish>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_FISH"));
-                    break;
-                case OBJ_PLATFORM:
-                    SpawnedActor = World->SpawnActor<APlatformActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_PLATFORM"));
-                    break;
-                case OBJ_GOALPLATFORM:
-                    SpawnedActor = World->SpawnActor<AGoalPlatformActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_GoalPLATFORM"));
-                    break;
-                case OBJ_COIN:
-                    SpawnedActor = World->SpawnActor<AItemActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_COIN"));
-                    break;
-                case OBJ_TRIGGERBOX:
-                    SpawnedActor = World->SpawnActor<ATriggerBox>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_TRIGGERBOX"));
-                    break;
                 case OBJ_FBX:
                     SpawnedActor = World->SpawnActor<ASkeletalMeshActor>();
                     SpawnedActor->SetActorLabel(TEXT("OBJ_FBX"));
                     SpawnedActor->SetActorTickInEditor(true);
                     break;
+                case OBJ_SHARKRY:
+                    SpawnedActor = World->SpawnActor<ARandCharacter>();
+                    SpawnedActor->SetActorLabel(TEXT("OBJ_SHARKRY"));
+                    SpawnedActor->SetActorScale(FVector(.01f, .01f, .01f));                    SpawnedActor->SetActorScale(FVector(.01f, .01f, .01f));
                 case OBJ_CAMERA:
                 case OBJ_PLAYER:
                 case OBJ_END:

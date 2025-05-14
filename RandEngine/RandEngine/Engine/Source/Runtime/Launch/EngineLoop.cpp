@@ -357,6 +357,7 @@ void FEngineLoop::GetClientSize(uint32& OutWidth, uint32& OutHeight) const
 void FEngineLoop::Exit()
 {
     SkeletalViewerSubEngine->Release();
+    AnimationViewerSubEngine->Release();
     CleanupSubWindow();
     
     LevelEditor->Release();
@@ -395,11 +396,9 @@ void FEngineLoop::CleanupSubWindow()
         SkeletalViewerGD.Release();
     }
     
-    if (SkeletalViewerWnd && IsWindow(SkeletalViewerWnd))
-    {
-        DestroyWindow(SkeletalViewerWnd);
-        SkeletalViewerWnd = nullptr;
-    }
+    if (AnimationViewerGD.Device)
+        AnimationViewerGD.Release();
+    
 }
 
 void FEngineLoop::WindowInit(HINSTANCE hInstance)

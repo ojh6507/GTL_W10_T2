@@ -180,7 +180,6 @@ void USkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
     {
         SubRenderer->SetPreviewSkeletalMesh(SelectedSkeletalMesh);
     }
-    
     SelectedActor = SkeletalMeshActor;
     
     if (SubRenderer)
