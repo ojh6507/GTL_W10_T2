@@ -6,16 +6,18 @@
 #include "UObject/ObjectFactory.h"
 #include "Engine/AssetManager.h"
 #include "Components/Mesh/SkeletalMeshComponent.h"
+#include "Contents/Actors/ARandCharacter.h"
 
 // 원래는 Script 또는 Blueprint로 해야할 작업에 해당함
 UStateMachineAnimInstance::UStateMachineAnimInstance() : StateMachine(nullptr)
-{
+{ 
     // [TEMP] Get asset
-    IdleAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Idle.fbx"));
-    WalkAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Walk.fbx"));;
-    JumpAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Jump.fbx"));;
+    IdleAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Idle_mixamo.com"));
+    WalkAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Walk_mixamo.com"));;
+    JumpAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Jump_mixamo.com"));;
 
     StateMachine = FObjectFactory::ConstructObject<UStateMachine>(this);
+    StateMachine->OwningAnimInstance = this;
 
     // 상태 등록
     if (IdleAnimation)
@@ -49,6 +51,9 @@ UStateMachineAnimInstance::UStateMachineAnimInstance() : StateMachine(nullptr)
     if (WalkIdx != INDEX_NONE && JumpIdx != INDEX_NONE) {
         StateMachine->AddTransition(WalkIdx, JumpIdx, &UStateMachineAnimInstance::Cond_CanJump, TEXT("WalkToJump"));
     }
+    if (IdleIdx != INDEX_NONE && JumpIdx != INDEX_NONE) {
+        StateMachine->AddTransition(JumpIdx, IdleIdx, &UStateMachineAnimInstance::Cond_CanIdle, TEXT("JumpToIdle"));
+    }
 
     StateMachine->Initialize();
 }
@@ -65,12 +70,9 @@ void UStateMachineAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     AActor* OwnerActor = SkelMeshComp ? SkelMeshComp->GetOwner() : nullptr;
     
     // Player Actor로 부터 데이터 업데이트
-   /* if (APlayer* Character = Cast<APlayer>(OwnerActor)) {
-        Speed = Character->GetVelocity();
-        bIsMoving = Speed > 1.0f;
-        bIsJumping = Character->GetCharacterMovement()->IsFalling();
-    }*/
-
+    if (ARandCharacter* Character = Cast<ARandCharacter>(OwnerActor)) {
+        //bIsJumping = Character->GetCharacterMovement()->IsFalling();
+    }
 
     if (StateMachine)
     {
