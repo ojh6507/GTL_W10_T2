@@ -43,6 +43,10 @@ void UAnimSequence::GetAnimationPose(FPoseContext& OutAnimationPoseData, const F
         {
             continue;
         }
+        if (BoneTracks.Num() <= BoneIndex)
+        {
+            continue;
+        }
         FString tt = BoneTracks[BoneIndex].Name.ToString();
         FString nn = Skeleton->BoneTree[BoneIndex].Name.ToString();
 

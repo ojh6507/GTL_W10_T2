@@ -69,7 +69,7 @@ void UAssetManager::InitAssetManager()
 {
     AssetRegistry = std::make_unique<FAssetRegistry>();
 
-    LoadFiles(~static_cast<uint8>(EExtensionType::Fbx));
+    LoadFiles();
 }
 
 const TMap<FName, FAssetInfo>& UAssetManager::GetAssetRegistry()
@@ -107,16 +107,6 @@ USkeleton* UAssetManager::GetSkeleton(const FName& Name)
     {
         return SkeletonMap[path.c_str()];
     }
-    LoadFile(path, static_cast<uint8>(EExtensionType::Fbx));
-
-    if (SkeletonMap.Contains(NameWithoutExt))
-    {
-        return SkeletonMap[NameWithoutExt];
-    }
-    if (SkeletonMap.Contains(path.c_str()))
-    {
-        return SkeletonMap[path.c_str()];
-    }
     return nullptr;
 }
 
@@ -125,16 +115,6 @@ USkeletalMesh* UAssetManager::GetSkeletalMesh(const FName& Name)
     std::filesystem::path path = std::filesystem::path(GetData(Name.ToString()));
     FName NameWithoutExt = FName(std::filesystem::path(path).replace_extension().c_str());
     
-    if (SkeletalMeshMap.Contains(NameWithoutExt))
-    {
-        return SkeletalMeshMap[NameWithoutExt];
-    }
-    if (SkeletalMeshMap.Contains(path.c_str()))
-    {
-        return SkeletalMeshMap[path.c_str()];
-    }
-    LoadFile(path, static_cast<uint8>(EExtensionType::Fbx));
-
     if (SkeletalMeshMap.Contains(NameWithoutExt))
     {
         return SkeletalMeshMap[NameWithoutExt];
@@ -158,17 +138,6 @@ UAnimationAsset* UAssetManager::GetAnimationAsset(const FName& Name)
     {
         return AnimationMap[path.c_str()];
     }
-    
-    LoadFile(path, static_cast<uint8>(EExtensionType::Fbx));
-
-    if (AnimationMap.Contains(NameWithoutExt))
-    {
-        return AnimationMap[NameWithoutExt];
-    }
-    if (AnimationMap.Contains(path.c_str()))
-    {
-        return AnimationMap[path.c_str()];
-    }
     return nullptr;
 }
 
@@ -184,17 +153,6 @@ UStaticMesh* UAssetManager::GetStaticMesh(const FName& Name)
     {
         return StaticMeshMap[path.c_str()];
     }
-    
-    LoadFile(path);
-
-    if (StaticMeshMap.Contains(NameWithoutExt))
-    {
-        return StaticMeshMap[NameWithoutExt];
-    }
-    if (StaticMeshMap.Contains(path.c_str()))
-    {
-        return StaticMeshMap[path.c_str()];
-    }
     return nullptr;
 }
 
@@ -202,15 +160,14 @@ void UAssetManager::AddMaterial(UMaterial* InMaterial)
 {
     FString BaseAssetName = InMaterial->GetMaterialInfo().MaterialName;
             
-    FAssetInfo AssetInfo = {};
-    AssetInfo.PackagePath = "";
-    AssetInfo.Size = 0;
-    AssetInfo.AssetName = FName(BaseAssetName);
-    AssetInfo.AssetType = EAssetType::Material;
-    AssetRegistry->PathNameToAssetInfo.Add(AssetInfo.AssetName, AssetInfo);
-
+    FAssetInfo Info = {}; 
+    Info.PackagePath = "";
+    Info.Size = 0;
+    Info.AssetName = FName(BaseAssetName);
+    Info.AssetType = EAssetType::Material;
+    AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
     
-    FString Key = AssetInfo.AssetName.ToString();
+    FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
     MaterialMap.Add(Key, InMaterial);
 }
 
@@ -242,6 +199,13 @@ void UAssetManager::LoadFiles(uint8 ExtensionFlags)
     {
         LoadFile(Entry, ExtensionFlags);
     }
+
+    const std::string BaseAssetPathName = "Assets/";
+
+    for (const auto& Entry : std::filesystem::recursive_directory_iterator(BaseAssetPathName))
+    {
+        LoadFile(Entry, ExtensionFlags);
+    }
 }
 
 void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
@@ -263,6 +227,7 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
         AssetInfo.PackagePath = FName(Entry.parent_path().wstring());
         AssetInfo.Size = static_cast<uint32>(std::filesystem::file_size(Entry));
 
+        // TODO Array로 변경
         //for (const auto& StaticMesh : Result.StaticMesh)
         if (Result.StaticMesh != nullptr)
         {
@@ -285,7 +250,7 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
             Info.AssetType = EAssetType::Material;
             AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
 
-            FString Key = Info.AssetName.ToString();
+            FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
             MaterialMap.Add(Key, Material);
         }
     }
@@ -294,31 +259,31 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
         // 경로, 이름 준비
         const FString FilePath = Entry.parent_path().string() + "/" + Entry.filename().string();
         const FString FileNameWithoutExt = Entry.stem().filename().string();
-
+    
         // FBX 로더로 파일 읽기
-
+    
         FFbxLoadResult Result;
         if (!FManagerFBX::LoadFBX(FilePath.ToWideString(), Result))
         {
             return;
         }
-
+    
         // AssetInfo 기본 필드 세팅
         FAssetInfo AssetInfo = {};
         AssetInfo.PackagePath = FName(Entry.parent_path().wstring());
         AssetInfo.Size = static_cast<uint32>(std::filesystem::file_size(Entry));
-
+    
         // 로드된 Skeleton 등록
         for (int32 i = 0; i < Result.Skeletons.Num(); ++i)
         {
             USkeleton* Skeleton = Result.Skeletons[i];
-            FString BaseAssetName = FileNameWithoutExt;
+            FString BaseAssetName = FileNameWithoutExt + "_Skeleton";
                 
             FAssetInfo Info = AssetInfo;
             Info.AssetName = i > 0 ? FName(BaseAssetName + FString::FromInt(i)) : FName(BaseAssetName);
             Info.AssetType = EAssetType::Skeleton;
             AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
-
+    
             FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
             SkeletonMap.Add(Key, Skeleton);
         }
@@ -333,7 +298,7 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
             Info.AssetName = i > 0 ? FName(BaseAssetName + FString::FromInt(i)) : FName(BaseAssetName);
             Info.AssetType = EAssetType::SkeletalMesh;
             AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
-
+    
             FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
             SkeletalMeshMap.Add(Key, SkeletalMesh);
         }
@@ -343,7 +308,7 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
         {
             UAnimationAsset* AnimationAsset = Result.Animations[i];
             FString BaseAssetName = FileNameWithoutExt + "_" + AnimationAsset->GetName();
-                
+
             FAssetInfo Info = AssetInfo;
             Info.AssetName = i > 0 ? FName(BaseAssetName + FString::FromInt(i)) : FName(BaseAssetName);
             Info.AssetType = EAssetType::Animation;
@@ -352,7 +317,7 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
             FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
             AnimationMap.Add(Key, AnimationAsset);
         }
-
+    
         for (int32 i = 0; i < Result.Materials.Num(); ++i)
         {
             UMaterial* Material = Result.Materials[i];
@@ -362,8 +327,8 @@ void UAssetManager::LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags)
             Info.AssetName = FName(BaseAssetName);
             Info.AssetType = EAssetType::Material;
             AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
-
-            FString Key = Info.AssetName.ToString();
+    
+            FString Key = Info.PackagePath.ToString() + "/" + Info.AssetName.ToString();
             MaterialMap.Add(Key, Material);
         }
     }

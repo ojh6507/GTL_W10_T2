@@ -18,6 +18,14 @@ public:
     float TimeInCurrentState;
     UAnimInstance* OwningAnimInstance;
 
+    // Memebers for Blend
+    bool bIsBlending;
+    int32 PreviousStateIndex;
+    float BlendDuration;
+    float CurrentBlendTime;
+    FCompactPose SourceBlendPose;
+    FBlendedCurve SourceBlendCurve;
+
 public:
     UStateMachine();
     UStateMachine(UAnimInstance* InOwningAnimInstance);
@@ -30,4 +38,6 @@ public:
     void Update(float DeltaTime);
     void Evaluate(FPoseContext& OutPoseContext, FAnimExtractContext& InOutExtractContext);
     FName GetCurrentStateName() const;
+private:
+    void StartBlending(int32 InTargetStateIndex);
 };
