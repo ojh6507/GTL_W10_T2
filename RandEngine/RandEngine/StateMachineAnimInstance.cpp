@@ -11,9 +11,9 @@
 UStateMachineAnimInstance::UStateMachineAnimInstance() : StateMachine(nullptr)
 {
     // [TEMP] Get asset
-    IdleAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset("Idle"));
-    WalkAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset("Walk"));;
-    JumpAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset("Jump"));;
+    IdleAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Idle.fbx"));
+    WalkAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Walk.fbx"));;
+    JumpAnimation = Cast<UAnimSequence>(UAssetManager::Get().GetAnimationAsset(L"Contents/Jump.fbx"));;
 
     StateMachine = FObjectFactory::ConstructObject<UStateMachine>(this);
 
