@@ -11,9 +11,9 @@ void SkeletalDetailPanel::Render(USkeletalMesh* InSkeletalMesh, int32 SelectedBo
 {
     ImVec2 WinSize = ImVec2(Width, Height);
     
-    ImGui::SetNextWindowPos(ImVec2(WinSize.x * 0.8f + 2.0f, 0));
+    ImGui::SetNextWindowPos(ImVec2(WinSize.x * 0.8f + 2.0f, 50));
 
-    ImGui::SetNextWindowSize(ImVec2(WinSize.x * 0.25f - 5.0f, 500));
+    ImGui::SetNextWindowSize(ImVec2(WinSize.x * 0.25f - 5.0f, 450));
     /* Panel Flags */
     ImGuiWindowFlags PanelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
 
@@ -81,11 +81,6 @@ void SkeletalDetailPanel::Render(USkeletalMesh* InSkeletalMesh, int32 SelectedBo
                     }
 
                     ImGui::Unindent(10.0f);
-                }
-                if (ImGui::Button("Save",ImVec2(100,30)))
-                {
-                    USkeletalSubEngine* SkeletalSubEngine = Cast<USkeletalSubEngine>(InSkeletalMesh->GetOuter());
-                    SkeletalSubEngine->SaveSkeletalMesh();
                 }
                 if (Location == PrevLocation && Rotation == PrevRotation && Scale == PrevScale)
                 {

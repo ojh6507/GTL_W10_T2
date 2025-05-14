@@ -32,6 +32,9 @@ public:
     int32 PreInit();
     int32 Init(HINSTANCE hInstance);
     void Render(float DeltaTime);
+    void OpenAnimationViewer();
+    void OpenSkeletalViewer();
+    void SubEngineControl();
     void Tick();
     void Exit();
     void Input();
@@ -83,7 +86,10 @@ private:
 
     ESkinningType SkinningType = ST_GPU;
     int32 TargetFPS = 999;
+
 public:
+    bool bRepositionAnimWindow = false;
+    bool bRePositionSkeletalWindow = false;
     ESkinningType GetSkinningType() { return SkinningType; }
     void SetSkinningType(ESkinningType InWay) { SkinningType = InWay; }
     SLevelEditor* GetLevelEditor() const { return LevelEditor; }
