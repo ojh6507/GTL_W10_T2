@@ -178,7 +178,7 @@ void SAnimationTimelinePanel::UpdatePlayback(float DeltaSeconds)
     {
         SelectedComponent->GetSingleNodeInstance()->SetExternalTime(CurrentTimeSeconds);
         AnimationDeltaTime = 0;
-        FSoundManager::GetInstance().StopAllSounds();
+        //FSoundManager::GetInstance().StopAllSounds();
         return;
     }
     AnimationDeltaTime = ImGui::GetIO().DeltaTime;

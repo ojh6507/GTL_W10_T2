@@ -21,13 +21,13 @@ public:
 
 private:
     UStateMachine* StateMachine;
-
+    TSet<uint32> TriggeredNotifyIDsThisCycle_StateMachine;
 public:
     UStateMachineAnimInstance();
     virtual ~UStateMachineAnimInstance();
 
     virtual void NativeUpdateAnimation(float DeltaSeconds) override;
-
+    void HandleStateMachineNotifies();
     // 전환 조건 함수들
     static bool Cond_CanWalk(const UAnimInstance* InAnimInstance);
     static bool Cond_CanIdle(const UAnimInstance* InAnimInstance);

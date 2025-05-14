@@ -163,7 +163,7 @@ void UStateMachine::Evaluate(FPoseContext& OutPoseContext, FAnimExtractContext& 
     }
     else // Not on Blending
     {
-        const FAnimationState& ActiveState = States[CurrentStateIndex];
+        FAnimationState& ActiveState = States[CurrentStateIndex];
         if (ActiveState.AnimationToPlay && ActiveState.AnimationToPlay->GetDataModel())
         {
             const float PlayLength = static_cast<float>(ActiveState.AnimationToPlay->GetDataModel()->GetPlayLength());
@@ -181,6 +181,8 @@ void UStateMachine::Evaluate(FPoseContext& OutPoseContext, FAnimExtractContext& 
             InOutExtractContext.bLooping = true;
 
             ActiveState.Evaluate(SampleTime, OutPoseContext, InOutExtractContext);
+            ActiveState.PreviousTime = ActiveState.CurrentTime;
+            ActiveState.CurrentTime = SampleTime;
         }
         else
         {
@@ -196,6 +198,15 @@ FName UStateMachine::GetCurrentStateName() const
         return States[CurrentStateIndex].StateName;
     }
     return NAME_None;
+}
+
+const FAnimationState* UStateMachine::GetCurrentActiveState() const
+{
+    if (States.IsValidIndex(CurrentStateIndex))
+    {
+        return &States[CurrentStateIndex];
+    }
+    return nullptr;
 }
 
 void UStateMachine::StartBlending(int32 InTargetStateIndex)

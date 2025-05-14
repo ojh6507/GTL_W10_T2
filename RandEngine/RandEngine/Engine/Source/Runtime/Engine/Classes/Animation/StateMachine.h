@@ -38,6 +38,7 @@ public:
     void Update(float DeltaTime);
     void Evaluate(FPoseContext& OutPoseContext, FAnimExtractContext& InOutExtractContext);
     FName GetCurrentStateName() const;
+    const FAnimationState* GetCurrentActiveState() const;
 private:
     void StartBlending(int32 InTargetStateIndex);
 };

@@ -37,7 +37,9 @@ struct FAnimationState
 {
     FName StateName;
     UAnimSequence* AnimationToPlay;
-
+    float PreviousTime = 0.0f;
+    float CurrentTime = 0.0f;
+    float PlayRate = 1.f;
     TArray<FAnimationTransitionRule> Transitions;
 
     FAnimationState(FName InName, UAnimSequence* InAnim)

@@ -55,11 +55,39 @@ public:
         return true;
     }
 
-    void PlaySound(const std::string& name) {
+    void PlaySound(const std::string& name, bool bStopPreviousIdentical = false) {
         auto it = soundMap.find(name);
         if (it != soundMap.end()) {
+            FMOD::Sound* soundToPlay = it->second;
+
+            if (bStopPreviousIdentical) {
+                for (auto chanIt = activeChannels.begin(); chanIt != activeChannels.end(); /* 조건부 증가 */) {
+                    FMOD::Channel* activeChannel = *chanIt;
+                    FMOD::Sound* currentSoundInChannel = nullptr;
+                    bool erased = false; // 제거되었는지 플래그
+
+                    if (activeChannel) { // 채널 유효성 검사
+                        FMOD_RESULT result = activeChannel->getCurrentSound(&currentSoundInChannel);
+                        if (result == FMOD_OK && currentSoundInChannel == soundToPlay) {
+                            activeChannel->stop();
+                            chanIt = activeChannels.erase(chanIt); // 제거하고 다음 유효한 반복자 받음
+                            erased = true;
+                            // 여기서 continue; 해도 되지만, erased 플래그로 아래에서 ++chanIt 방지
+                        }
+                    }
+                    else { // null 채널이라면 (이론상 없어야 하지만 방어 코드)
+                        chanIt = activeChannels.erase(chanIt);
+                        erased = true;
+                    }
+
+                    if (!erased) { // 제거되지 않았다면 다음 요소로 이동
+                        ++chanIt;
+                    }
+                }
+            }
+
             FMOD::Channel* newChannel = nullptr;
-            system->playSound(it->second, nullptr, false, &newChannel);
+            system->playSound(soundToPlay, nullptr, false, &newChannel);
             if (newChannel) {
                 activeChannels.push_back(newChannel);
             }

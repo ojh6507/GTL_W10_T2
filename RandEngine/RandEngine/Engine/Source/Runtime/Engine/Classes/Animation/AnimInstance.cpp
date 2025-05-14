@@ -59,7 +59,7 @@ void UAnimInstance::TriggerSoundNotifies(const FAnimNotifyEvent& NotifyToTrigger
 {
     if (!NotifyToTrigger.SoundNameToPlay.IsEmpty())
     {
-        FSoundManager::GetInstance().PlaySound(NotifyToTrigger.SoundNameToPlay.ToAnsiString());
+        FSoundManager::GetInstance().PlaySound(NotifyToTrigger.SoundNameToPlay.ToAnsiString(),true);
     }
 }
 

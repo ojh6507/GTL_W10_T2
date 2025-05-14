@@ -13,6 +13,7 @@ ASkeletalMeshActor::ASkeletalMeshActor()
     SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Idle.fbx"));
     SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Walk.fbx"));
     SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Jump.fbx"));
+    SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/Shoot Rifle.fbx"));
     //UAssetManager::Get().GetSkeletalMesh(L"Contents/Fast Run.fbx");
     //UAssetManager::Get().GetSkeletalMesh(L"Contents/Silly Dancing.fbx");
     SkeletalMeshComponent->SetSkeletalMesh(UAssetManager::Get().GetSkeletalMesh(L"Contents/RealSharkry.fbx"));
