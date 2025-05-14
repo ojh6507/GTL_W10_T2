@@ -7,6 +7,7 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "MyAnimInstance.h"
+#include "StateMachineAnimInstance.h"
 
 USkeletalMeshComponent::USkeletalMeshComponent()
 {
@@ -341,6 +342,12 @@ void USkeletalMeshComponent::TickAnimInstances(float DeltaTime, bool bNeedsValid
     //    // Sub anim instances are always forced to do a parallel update 
     //    LinkedInstance->UpdateAnimation(DeltaTime * GlobalAnimRateScale, false, UAnimInstance::EUpdateAnimationFlag::ForceParallelUpdate);
     //}
+    // [TEMP] FSM test - earky return if state machine exist
+    if (AnimSMInstance != nullptr) 
+    {
+        AnimSMInstance->UpdateAnimation(DeltaTime, bNeedsValidRootMotion);
+        return;
+    }
 
     if (AnimScriptInstance != nullptr)
     {

@@ -84,20 +84,20 @@ void AGameMode::StartMatch()
     GameInfo.ElapsedGameTime = 0.0f;
     GameInfo.TotalGameTime = 0.0f;
 
-    for (const auto& Coin : TObjectRange<AItemActor>())
-    {
-        if (Coin->GetWorld()->WorldType == GEngine->ActiveWorld->WorldType)
-        {
-            Coin->SetHidden(false);
-        }
-    }
+    //for (const auto& Coin : TObjectRange<AItemActor>())
+    //{
+    //    if (Coin->GetWorld()->WorldType == GEngine->ActiveWorld->WorldType)
+    //    {
+    //        Coin->SetHidden(false);
+    //    }
+    //}
 
-    AFish* Fish = Cast<AFish>(GEngine->ActiveWorld->GetMainPlayer());
-    Fish->Reset();
-    // GEngine->ActiveWorld->GetMainPlayer()->SetActorLocation(FVector(0, 0, 10));
-    GEngine->ActiveWorld->GetPlayerController()->Possess(GEngine->ActiveWorld->GetMainPlayer());
-    
-    FSoundManager::GetInstance().PlaySound("fishdream");
+    //AFish* Fish = Cast<AFish>(GEngine->ActiveWorld->GetMainPlayer());
+    //Fish->Reset();
+    //// GEngine->ActiveWorld->GetMainPlayer()->SetActorLocation(FVector(0, 0, 10));
+    //GEngine->ActiveWorld->GetPlayerController()->Possess(GEngine->ActiveWorld->GetMainPlayer());
+    //
+    //FSoundManager::GetInstance().PlaySound("fishdream");
     OnGameStart.Broadcast();
 }
 

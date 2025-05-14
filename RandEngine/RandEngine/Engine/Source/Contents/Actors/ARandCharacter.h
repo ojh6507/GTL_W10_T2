@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Actors/Player.h"
 #include "Components/ProjectileMovementComponent.h"
 
@@ -24,4 +24,6 @@ public:
 
     UPROPERTY
     (USkeletalMeshComponent*, SkeletalComponent, = nullptr)
+private:
+    FVector PreviousLocation;
 };

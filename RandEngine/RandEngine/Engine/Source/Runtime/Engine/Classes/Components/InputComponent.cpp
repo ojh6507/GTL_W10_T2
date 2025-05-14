@@ -18,6 +18,10 @@ void UInputComponent::ProcessInput(float DeltaTime)
     {
         KeyBindDelegate[FString("D")].Broadcast(DeltaTime);
     }
+    if (PressedKeys.Contains(EKeys::V))
+    {
+        KeyBindDelegate[FString("V")].Broadcast(DeltaTime);
+    }
 }
 
 void UInputComponent::SetPossess()
@@ -119,6 +123,18 @@ void UInputComponent::InputKey(const FKeyEvent& InKeyEvent)
             }
             break;
         }
+    case 'V':
+    {
+        if (InKeyEvent.GetInputEvent() == IE_Pressed)
+        {
+            PressedKeys.Add(EKeys::V);
+        }
+        else if (InKeyEvent.GetInputEvent() == IE_Released)
+        {
+            PressedKeys.Remove(EKeys::V);
+        }
+        break;
+    }
     default:
         break;
     }

@@ -5,6 +5,7 @@ class UAnimInstance;
 class UAnimationAsset;
 class UMyAnimInstance;
 class UAnimSingleNodeInstance;
+class UStateMachineAnimInstance;
 
 namespace EAnimationMode
 {
@@ -54,6 +55,9 @@ public:
     void TickAnimInstances(float DeltaTime, bool bNeedsValidRootMotion);
 public:
     UAnimInstance* AnimScriptInstance = nullptr;
+    // [TEMP]
+    UStateMachineAnimInstance* AnimSMInstance = nullptr;
+
     uint8 bEnableAnimation : 1;
 protected:
     int selectedSubMeshIndex = -1;

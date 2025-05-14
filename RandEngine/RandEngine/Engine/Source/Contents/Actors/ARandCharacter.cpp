@@ -1,9 +1,11 @@
-﻿#include "ARandCharacter.h"
+#include "ARandCharacter.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/Mesh/SkeletalMeshComponent.h"
 #include "Engine/AssetManager.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "StateMachineAnimInstance.h"
+#include "UObject/ObjectFactory.h"
 
 ARandCharacter::ARandCharacter()
 {
@@ -37,9 +39,40 @@ UObject* ARandCharacter::Duplicate(UObject* InOuter)
 void ARandCharacter::BeginPlay()
 {
     APlayer::BeginPlay();
+
+	PreviousLocation = GetActorLocation();
+
+	UStateMachineAnimInstance* AnimSMInstance = FObjectFactory::ConstructObject<UStateMachineAnimInstance>(nullptr);
+
+	USkeletalMeshComponent* SkeletalComponent = GetComponentByClass<USkeletalMeshComponent>();
+	SkeletalComponent->AnimSMInstance = AnimSMInstance;
+	AnimSMInstance->SetOwningComponent(SkeletalComponent);
 }
 
 void ARandCharacter::Tick(float DeltaTime)
 {
     APlayer::Tick(DeltaTime);
+
+	// [TEST] Update isMove
+	FVector CurrentLocation = GetActorLocation();
+	float DistanceMoved = FVector::Dist(CurrentLocation, PreviousLocation);
+
+	const float MovementThreshold = 0.0f; // 단위는 cm 또는 프로젝트 단위에 맞게 설정
+
+	bool bIsMoving = DistanceMoved > MovementThreshold;
+	bool bIsJumping = CurrentLocation.Z > 0.1f;
+
+	USkeletalMeshComponent* SkeletalComponent = GetComponentByClass<USkeletalMeshComponent>();
+
+	if (SkeletalComponent && SkeletalComponent->AnimSMInstance)
+	{
+		SkeletalComponent->AnimSMInstance->bIsJumping = bIsJumping;
+	}
+
+	if (SkeletalComponent && SkeletalComponent->AnimSMInstance)
+	{
+		SkeletalComponent->AnimSMInstance->bIsMoving = bIsMoving;
+	}
+
+	PreviousLocation = CurrentLocation;
 }
