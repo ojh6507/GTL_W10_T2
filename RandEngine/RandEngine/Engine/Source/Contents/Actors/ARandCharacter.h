@@ -4,12 +4,12 @@
 
 class USphereComponent;
 
-class RandCharacter : public APlayer
+class ARandCharacter : public APlayer
 {
-    DECLARE_CLASS(RandCharacter, APlayer)
+    DECLARE_CLASS(ARandCharacter, APlayer)
 public:
-    RandCharacter();
-    virtual ~RandCharacter() override = default;
+    ARandCharacter();
+    virtual ~ARandCharacter() override = default;
 
     virtual void PostSpawnInitialize() override;
 
