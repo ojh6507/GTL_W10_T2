@@ -180,9 +180,9 @@ void UStateMachine::Evaluate(FPoseContext& OutPoseContext, FAnimExtractContext& 
             InOutExtractContext.CurrentTime = SampleTime;
             InOutExtractContext.bLooping = true;
 
-            ActiveState.Evaluate(SampleTime, OutPoseContext, InOutExtractContext);
             ActiveState.PreviousTime = ActiveState.CurrentTime;
             ActiveState.CurrentTime = SampleTime;
+            ActiveState.Evaluate(SampleTime, OutPoseContext, InOutExtractContext);
         }
         else
         {

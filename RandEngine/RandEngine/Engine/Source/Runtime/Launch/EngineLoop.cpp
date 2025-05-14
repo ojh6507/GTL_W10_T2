@@ -122,9 +122,9 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     AnimationViewerSubEngine->Initialize(AnimationViewerWnd, &AnimationViewerGD, BufferManager,FUIManager,UnrealEditor);
     
     FSoundManager::GetInstance().Initialize();
-    FSoundManager::GetInstance().LoadSound("fishdream", "Contents/Sounds/fishdream.mp3");
-    FSoundManager::GetInstance().LoadSound("sizzle", "Contents/Sounds/sizzle.mp3");
     FSoundManager::GetInstance().LoadSound("rifle-gunshot", "Contents/Sounds/rifle-gunshot.mp3");
+    FSoundManager::GetInstance().LoadSound("FootStep", "Contents/Sounds/Player_Footstep_08.wav");
+    FSoundManager::GetInstance().LoadSound("Player_Land", "Contents/Sounds/Player_Land.wav");
     //FSoundManager::GetInstance().PlaySound("fishdream");
 
     UpdateUI();
