@@ -39,13 +39,14 @@ void USkeletalSubEngine::Initialize(HWND& hWnd, FGraphicsDevice* InGraphics, FDX
     SkeletalMeshActor = FObjectFactory::ConstructObject<ASkeletalMeshActor>(this);
 
     BasePlane = FObjectFactory::ConstructObject<ACube>(this);
-    BasePlane->SetActorScale(FVector(100,100,1));
+    BasePlane->SetActorScale(FVector(500,500,1));
     BasePlane->SetActorLocation(FVector(0,0,-1));
     SelectedBoneComponent = FObjectFactory::ConstructObject<USceneComponent>(this);
 
     UnrealSphereComponent = FObjectFactory::ConstructObject<UStaticMeshComponent>(this);
     UnrealSphereComponent->SetStaticMesh(UAssetManager::Get().GetStaticMesh(L"Contents/UnrealSphere.obj"));
-    UnrealSphereComponent->SetRelativeScale3D(FVector(-5,-5,-5));
+    UnrealSphereComponent->SetRelativeScale3D(FVector(-10,-10,-10));
+    UnrealSphereComponent->SetRelativeLocation(FVector(0,0,2000));
     UnrealSphereComponent->SetRelativeRotation(FRotator(0,0,180));
     
     SelectedActor = SkeletalMeshActor;
