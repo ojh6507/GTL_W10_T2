@@ -11,7 +11,9 @@
 #include "D3D11RHI/GraphicDevice.h"
 #include "Engine/Asset/SkeletalMeshAsset.h"
 #include "UnrealEd/EditorViewportClient.h"
-
+#include "SkeletalMeshDebugger.h"
+#include "PropertyEditor/ShowFlags.h"
+#include "LineRenderPass.h"
 FSubRenderer::~FSubRenderer()
 {
     Release();
@@ -24,16 +26,16 @@ void FSubRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* In
     BufferManager = InBufferManager;
 
     ShaderManager = new FDXDShaderManager(Graphics->Device);
-    
+    LineRenderPass = new FLineRenderPass();
     UINT MaterialBufferSize = sizeof(FMaterialConstants);
     BufferManager->CreateBufferGeneric<FMaterialConstants>("FMaterialConstants", nullptr, MaterialBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
     UINT LitUnlitBufferSize = sizeof(FLitUnlitConstants);
     BufferManager->CreateBufferGeneric<FLitUnlitConstants>("FLitUnlitConstants", nullptr, LitUnlitBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-    
+
     UINT LightInfoBufferSize = sizeof(FLightInfoBuffer);
     BufferManager->CreateBufferGeneric<FLightInfoBuffer>("FLightInfoBuffer", nullptr, LightInfoBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-    
+
     UINT ObjectBufferSize = sizeof(FObjectConstantBuffer);
     BufferManager->CreateBufferGeneric<FObjectConstantBuffer>("FObjectConstantBuffer", nullptr, ObjectBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
@@ -43,14 +45,15 @@ void FSubRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* In
     UINT BonesBufferSize = sizeof(FBonesConstants);
     BufferManager->CreateBufferGeneric<FBonesConstants>("FBonesConstants", nullptr, BonesBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
-    
+    LineRenderPass->Initialize(BufferManager, Graphics, ShaderManager);
+
     ID3D11Buffer* ObjectBuffer = BufferManager->GetConstantBuffer(TEXT("FObjectConstantBuffer"));
     ID3D11Buffer* CameraConstantBuffer = BufferManager->GetConstantBuffer(TEXT("FCameraConstantBuffer"));
     Graphics->DeviceContext->VSSetConstantBuffers(12, 1, &ObjectBuffer);
     Graphics->DeviceContext->VSSetConstantBuffers(13, 1, &CameraConstantBuffer);
     Graphics->DeviceContext->PSSetConstantBuffers(12, 1, &ObjectBuffer);
     Graphics->DeviceContext->PSSetConstantBuffers(13, 1, &CameraConstantBuffer);
-    
+
     D3D11_INPUT_ELEMENT_DESC StaticMeshLayoutDesc[] = {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -125,6 +128,11 @@ void FSubRenderer::Release()
         delete ShaderManager;
         ShaderManager = nullptr;
     }
+    if (LineRenderPass)
+    {
+        delete LineRenderPass;
+        LineRenderPass = nullptr;
+    }
 }
 
 void FSubRenderer::PrepareRender(FEditorViewportClient* Viewport)
@@ -136,7 +144,7 @@ void FSubRenderer::PrepareRender(FEditorViewportClient* Viewport)
     FRenderTargetRHI* RenderTargetRHI = ViewportResource->GetRenderTarget(EResourceType::ERT_Scene);
     FDepthStencilRHI* DepthStencilRHI = ViewportResource->GetDepthStencil(EResourceType::ERT_Scene);
     // Set RTV + DSV
-    
+
     // Clear RenderTarget
     Graphics->DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
     Graphics->DeviceContext->ClearRenderTargetView(Graphics->BackBufferRTV, Graphics->ClearColor);
@@ -146,7 +154,7 @@ void FSubRenderer::PrepareRender(FEditorViewportClient* Viewport)
 
     Graphics->DeviceContext->OMSetRenderTargets(1, &Graphics->BackBufferRTV, Graphics->DeviceDSV);
     // Graphics->DeviceContext->OMSetRenderTargets(1, &RenderTargetRHI->RTV, DepthStencilRHI->DSV);
-    
+
     // Set Viewport
     if (ViewMode == EViewModeIndex::VMI_Wireframe)
     {
@@ -157,8 +165,8 @@ void FSubRenderer::PrepareRender(FEditorViewportClient* Viewport)
         Graphics->DeviceContext->RSSetState(Graphics->RasterizerSolidBack);
     }
     // Set Rasterizer + DSS
-     Graphics->DeviceContext->OMSetDepthStencilState(Graphics->DepthStencilState, 0);
-
+    Graphics->DeviceContext->OMSetDepthStencilState(Graphics->DepthStencilState, 0);
+    FEngineLoop::PrimitiveDrawBatch.InitializeGrid(0, 0, 0);
     PrepareStaticRenderArr(Viewport);
 }
 void FSubRenderer::Render()
@@ -172,13 +180,13 @@ void FSubRenderer::Render()
     // GPU SKinning 
     ID3D11VertexShader* vertexShader = nullptr;
     ID3D11InputLayout* inputLayout = nullptr;
-    if (GEngineLoop.GetSkinningType()==ST_GPU)
+    if (GEngineLoop.GetSkinningType() == ST_GPU)
     {
         vertexShader = ShaderManager->GetVertexShaderByKey(L"SkeletalMeshVertexShader");
         inputLayout = ShaderManager->GetInputLayoutByKey(L"SkeletalMeshVertexShader"); // VS와 함께 생성했으므로 같은 키 사용
         UpdateBoneConstants();
     }
-    else if (GEngineLoop.GetSkinningType()==ST_CPU)
+    else if (GEngineLoop.GetSkinningType() == ST_CPU)
     {
         vertexShader = ShaderManager->GetVertexShaderByKey(L"StaticMeshVertexShader");
         inputLayout = ShaderManager->GetInputLayoutByKey(L"StaticMeshVertexShader"); // VS와 함께 생성했으므로 같은 키 사용
@@ -194,11 +202,11 @@ void FSubRenderer::Render()
     Graphics->DeviceContext->PSSetShader(pixelShader, nullptr, 0);
     Graphics->DeviceContext->IASetInputLayout(inputLayout);
     Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    
+
     UpdateObjectConstant(FMatrix::Identity, FVector4(), false);
     UpdateConstants();
     RenderMesh();
-    if (GEngineLoop.GetSkinningType()==ST_GPU)
+    if (GEngineLoop.GetSkinningType() == ST_GPU)
     {
         vertexShader = ShaderManager->GetVertexShaderByKey(L"StaticMeshVertexShader");
         inputLayout = ShaderManager->GetInputLayoutByKey(L"StaticMeshVertexShader"); // VS와 함께 생성했으므로 같은 키 사용
@@ -208,6 +216,8 @@ void FSubRenderer::Render()
         Graphics->DeviceContext->IASetInputLayout(inputLayout);
     }
     RenderStaticMesh();
+
+    LineRenderPass->ProcessLineRendering();
 }
 
 void FSubRenderer::RenderMesh()
@@ -215,7 +225,13 @@ void FSubRenderer::RenderMesh()
     FSkeletalMeshRenderData* RenderData = PreviewSkeletalMesh->GetRenderData();
 
     TArray<FStaticMaterial*> RenderMaterial = PreviewSkeletalMesh->GetMaterials();
-    
+    const uint64 ShowFlag = TargetViewport->GetShowFlag();
+    if (ShowFlag & EEngineShowFlags::SF_Bone) {
+        FSkeletalMeshDebugger::DrawSkeleton(PreviewSkeletalMeshComp);
+        FSkeletalMeshDebugger::DrawSkeletonAABBs(PreviewSkeletalMeshComp);
+    }
+
+
     UINT Stride = sizeof(FSkeletalMeshVertex);
     UINT Offset = 0;
     FVertexInfo VertexInfo;
@@ -240,9 +256,9 @@ void FSubRenderer::RenderMesh()
     for (int SubMeshIndex = 0; SubMeshIndex < RenderData->Subsets.Num(); SubMeshIndex++)
     {
         uint32 MaterialIndex = RenderData->Subsets[SubMeshIndex].MaterialIndex;
-        
+
         MaterialUtils::UpdateMaterial(BufferManager, Graphics, RenderMaterial[MaterialIndex]->Material->GetMaterialInfo());
-        
+
         uint32 StartIndex = RenderData->Subsets[SubMeshIndex].IndexStart;
         uint32 IndexCount = RenderData->Subsets[SubMeshIndex].IndexCount;
         Graphics->DeviceContext->DrawIndexed(IndexCount, StartIndex, 0);
@@ -266,9 +282,9 @@ void FSubRenderer::PrepareStaticRenderArr(FEditorViewportClient* Viewport)
         for (auto iter : Viewport->GetGizmoActor()->GetScaleArr())
             StaticMeshComponents.Add(iter);
     }
-    if(Cast<USkeletalSubEngine>(Engine))
+    if (Cast<USkeletalSubEngine>(Engine))
         StaticMeshComponents.Add(Cast<USkeletalSubEngine>(Engine)->BasePlane->GetStaticMeshComponent());
-    else if ( Cast<UAnimationSubEngine>(Engine))
+    else if (Cast<UAnimationSubEngine>(Engine))
         StaticMeshComponents.Add(Cast<UAnimationSubEngine>(Engine)->BasePlane->GetStaticMeshComponent());
     StaticMeshComponents.Add(Cast<USkeletalSubEngine>(Engine)->UnrealSphereComponent);
 }
@@ -286,17 +302,23 @@ void FSubRenderer::RenderStaticMesh()
         {
             continue;
         }
-        
+
         FMatrix WorldMatrix = Comp->GetWorldMatrix();
         bool bSelecet = false;
+        EViewModeIndex ViewMode = TargetViewport->GetViewMode();
         if (Cast<UGizmoBaseComponent>(Comp))
         {
-            USceneComponent* Gizmo=  TargetViewport->GetPickedGizmoComponent();
-            bSelecet = (Gizmo== Comp);
+            USceneComponent* Gizmo = TargetViewport->GetPickedGizmoComponent();
+            bSelecet = (Gizmo == Comp);
+            Graphics->DeviceContext->RSSetState(Graphics->RasterizerSolidBack);
         }
         UpdateObjectConstant(WorldMatrix, FVector4(), bSelecet);
 
         RenderPrimitive(RenderData, Comp->GetStaticMesh()->GetMaterials(), Comp->GetOverrideMaterials(), Comp->GetselectedSubMeshIndex());
+        if (ViewMode == EViewModeIndex::VMI_Wireframe)
+        {
+            Graphics->DeviceContext->RSSetState(Graphics->RasterizerWireframeBack);
+        }
     }
 }
 
@@ -313,14 +335,14 @@ void FSubRenderer::UpdateObjectConstant(const FMatrix& WorldMatrix, const FVecto
     ObjectData.InverseTransposedWorld = FMatrix::Transpose(FMatrix::Inverse(WorldMatrix));
     ObjectData.UUIDColor = UUIDColor;
     ObjectData.bIsSelected = bIsSelected;
-    
+
     BufferManager->UpdateConstantBuffer(TEXT("FObjectConstantBuffer"), ObjectData);
 }
 
 void FSubRenderer::UpdateLightConstant() const
 {
     BufferManager->BindConstantBuffer(TEXT("FLightInfoBuffer"), 0, EShaderStage::Vertex);
-    
+
     FLightInfoBuffer LightBufferData = {};
     LightBufferData.DirectionalLightsCount = 0;
     LightBufferData.PointLightsCount = 0;
@@ -328,7 +350,7 @@ void FSubRenderer::UpdateLightConstant() const
 
     FAmbientLightInfo AmbientLightInfo;
     AmbientLightInfo.AmbientColor = FLinearColor(.1f, .1f, .1f, 1.0f);
-    
+
     LightBufferData.AmbientLightsCount = 1;
     LightBufferData.Ambient[0] = AmbientLightInfo;
 
@@ -344,7 +366,7 @@ void FSubRenderer::UpdateConstants() const
     };
 
     BufferManager->BindConstantBuffers(PSBufferKeys, 0, EShaderStage::Pixel);
-    
+
     /** Lit Flag */
     FLitUnlitConstants Data;
     Data.bIsLit = false;
@@ -382,6 +404,11 @@ void FSubRenderer::SetPreviewSkeletalMesh(USkeletalMesh* InPreviewSkeletalMesh)
 {
     PreviewSkeletalMesh = InPreviewSkeletalMesh;
     bOnlyOnce = false;
+}
+
+void FSubRenderer::SetPreviewSkeletalMeshComponent(USkeletalMeshComponent* InPreviewSkeletalMeshComp)
+{
+    PreviewSkeletalMeshComp = InPreviewSkeletalMeshComp;
 }
 
 void FSubRenderer::RenderPrimitive(FStaticMeshRenderData* RenderData, TArray<FStaticMaterial*> Materials, TArray<UMaterial*> OverrideMaterials,

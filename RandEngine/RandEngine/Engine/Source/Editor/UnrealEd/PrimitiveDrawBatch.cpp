@@ -64,10 +64,11 @@ void UPrimitiveDrawBatch::ReleaseResources()
 }
 
 // 3. 그리드 및 배치 준비 관련 함수
-void UPrimitiveDrawBatch::InitializeGrid(float Spacing, int GridCount)
+void UPrimitiveDrawBatch::InitializeGrid(float Spacing, int GridCount, int WorldGizmoCount)
 {
     GridParameters.GridSpacing = Spacing;
     GridParameters.NumGridLines = GridCount;
+    GridParameters.NumWorldGizmo = WorldGizmoCount;
     GridParameters.GridOrigin = { 0, 0, 0 };
 }
 

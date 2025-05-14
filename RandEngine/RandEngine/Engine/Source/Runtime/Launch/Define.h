@@ -159,7 +159,8 @@ struct FGridParameters
     FVector2D Padding1;
     
     FVector GridOrigin;
-    float pad;
+    int NumWorldGizmo;
+    
 };
 
 struct FSimpleVertex

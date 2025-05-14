@@ -4,6 +4,7 @@
 #include "SoundManager.h"
 #include "InputCore/InputCoreTypes.h"
 #include "Camera/CameraComponent.h"
+#include "Contents/Actors/ARandCharacter.h"
 #include "Contents/Actors/Fish.h"
 #include "Contents/Actors/ItemActor.h"
 #include "Engine/Engine.h"
