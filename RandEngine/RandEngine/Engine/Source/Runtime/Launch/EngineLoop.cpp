@@ -124,6 +124,7 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     FSoundManager::GetInstance().Initialize();
     FSoundManager::GetInstance().LoadSound("fishdream", "Contents/Sounds/fishdream.mp3");
     FSoundManager::GetInstance().LoadSound("sizzle", "Contents/Sounds/sizzle.mp3");
+    FSoundManager::GetInstance().LoadSound("rifle-gunshot", "Contents/Sounds/rifle-gunshot.mp3");
     //FSoundManager::GetInstance().PlaySound("fishdream");
 
     UpdateUI();
@@ -519,7 +520,7 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
         ImGui::SetCurrentContext(GEngineLoop.FUIManager->GetContext());
         if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)) return true;
     }
-    else if (hWnd == GEngineLoop.SkeletalViewerWnd)
+    else if (hWnd == GEngineLoop.SkeletalViewerWnd && GEngineLoop.SkeletalViewerSubEngine->SubUI)
     {
         ImGui::SetCurrentContext(GEngineLoop.SkeletalViewerSubEngine->SubUI->Context);
         if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)) return true;

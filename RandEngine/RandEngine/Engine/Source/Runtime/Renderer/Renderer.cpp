@@ -247,7 +247,7 @@ void FRenderer::PrepareRender(FViewportResource* ViewportResource) const
 {
     // Setup Viewport
     Graphics->DeviceContext->RSSetViewports(1, &ViewportResource->GetD3DViewport());
-
+    FEngineLoop::PrimitiveDrawBatch.InitializeGrid(5, 5000);
     ViewportResource->ClearDepthStencils(Graphics->DeviceContext);
     ViewportResource->ClearRenderTargets(Graphics->DeviceContext);
 

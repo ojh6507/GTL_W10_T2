@@ -19,7 +19,7 @@ public:
     void ReleaseResources();
 
     // 그리드 초기화 및 배치 준비 관련
-    void InitializeGrid(float Spacing, int GridCount);
+    void InitializeGrid(float Spacing, int GridCount, int WorldGizmoCount = 3);
     void PrepareBatch(FLinePrimitiveBatchArgs& OutArgs);
     void RemoveArr();
 
