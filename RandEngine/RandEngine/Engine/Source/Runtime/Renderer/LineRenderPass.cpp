@@ -80,7 +80,7 @@ void FLineRenderPass::DrawLineBatch(const FLinePrimitiveBatchArgs& BatchArgs) co
     Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
     const UINT vertexCountPerInstance = 2;
-    UINT instanceCount = BatchArgs.GridParam.NumGridLines + 3 +
+    UINT instanceCount = BatchArgs.GridParam.NumGridLines + BatchArgs.GridParam.NumWorldGizmo + 
         (BatchArgs.BoundingBoxCount * 12) +
         (BatchArgs.ConeCount * (2 * BatchArgs.ConeSegmentCount)) +
         (12 * BatchArgs.OBBCount);
@@ -96,11 +96,11 @@ void FLineRenderPass::UpdateObjectConstant(const FMatrix& WorldMatrix, const FVe
     ObjectData.InverseTransposedWorld = FMatrix::Transpose(FMatrix::Inverse(WorldMatrix));
     ObjectData.UUIDColor = UUIDColor;
     ObjectData.bIsSelected = bIsSelected;
-    
+
     BufferManager->UpdateConstantBuffer(TEXT("FObjectConstantBuffer"), ObjectData);
 }
 
-void FLineRenderPass::ProcessLineRendering(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FLineRenderPass::ProcessLineRendering()
 {
     UpdateShader();
     PrepareLineShader();
@@ -123,7 +123,7 @@ void FLineRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& Viewp
     FDepthStencilRHI* DepthStencilRHI = ViewportResource->GetDepthStencil(EResourceType::ERT_Scene);
     Graphics->DeviceContext->OMSetRenderTargets(1, &RenderTargetRHI->RTV, DepthStencilRHI->DSV);
 
-    ProcessLineRendering(Viewport);
+    ProcessLineRendering();
 
     Graphics->DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 }

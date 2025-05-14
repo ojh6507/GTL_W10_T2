@@ -6,6 +6,7 @@
 #include "UnrealClient.h"
 #include "Engine/SkeletalMeshActor.h"
 #include "Actors/Cube.h"
+#include "Components/Mesh/SkeletalMeshComponent.h"
 #include "Components/Mesh/SkeletalMesh.h"
 #include "Engine/AssetManager.h"
 
@@ -180,8 +181,11 @@ void USkeletalSubEngine::SetSkeletalMesh(USkeletalMesh* InSkeletalMesh)
         SubRenderer->SetPreviewSkeletalMesh(SelectedSkeletalMesh);
     }
     SelectedActor = SkeletalMeshActor;
-    // SkeletalMeshActor->SetActorScale(FVector(0.01f, 0.01f, 0.01f));
     
+    if (SubRenderer)
+    {
+        SubRenderer->SetPreviewSkeletalMeshComponent(SelectedActor->GetComponentByClass<USkeletalMeshComponent>());
+    }
 }
 
 void USkeletalSubEngine::SaveSkeletalMesh()

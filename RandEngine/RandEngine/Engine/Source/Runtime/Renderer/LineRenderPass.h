@@ -28,7 +28,7 @@ public:
     void UpdateShader();
     void PrepareLineShader() const;
     void UpdateObjectConstant(const FMatrix& WorldMatrix, const FVector4& UUIDColor, bool bIsSelected) const;
-    void ProcessLineRendering(const std::shared_ptr<FEditorViewportClient>& Viewport);
+    void ProcessLineRendering();
     void DrawLineBatch(const FLinePrimitiveBatchArgs& BatchArgs) const;
 
 private:

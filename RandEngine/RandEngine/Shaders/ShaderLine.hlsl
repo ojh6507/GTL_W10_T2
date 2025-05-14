@@ -8,7 +8,8 @@ cbuffer GridParametersData : register(b1)
     float2 Padding1;
     
     float3 GridOrigin; // Grid의 중심
-    float Padding;
+    int WorldGizmoCount;
+ 
 };
 
 cbuffer PrimitiveCounts : register(b3)
@@ -247,7 +248,7 @@ PS_INPUT mainVS(VS_INPUT input)
 
     // Grid / Axis / AABB 인스턴스 개수 계산
     uint gridLineCount = GridCount; // 그리드 라인
-    uint axisCount = 3; // X, Y, Z 축 (월드 좌표축)
+    uint axisCount = WorldGizmoCount; // X, Y, Z 축 (월드 좌표축)
     uint aabbInstanceCount = 12 * BoundingBoxCount; // AABB 하나당 12개 엣지
 
     // 1) "콘 인스턴스 시작" 지점

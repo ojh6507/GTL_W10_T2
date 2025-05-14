@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Container/Array.h"
 #include "Math/Matrix.h"
 #include "Math/Vector4.h"
@@ -17,7 +17,8 @@ class FDXDShaderManager;
 class FStaticMeshRenderPass;
 class FDXDBufferManager;
 class FGraphicsDevice;
-
+class FLineRenderPass;
+class USkeletalMeshComponent;
 class FSubRenderer
 {
 public:
@@ -48,6 +49,7 @@ public:
     void UpdateViewCamera(FEditorViewportClient* Viewport) const;
     /** Set */
     void SetPreviewSkeletalMesh(USkeletalMesh* InPreviewSkeletalMesh);
+    void SetPreviewSkeletalMeshComponent(USkeletalMeshComponent* InPreviewSkeletalMeshComp);
     void RenderPrimitive(FStaticMeshRenderData* RenderData, TArray<FStaticMaterial*> Materials, TArray<UMaterial*> OverrideMaterials, int SelectedSubMeshIndex) const;
 private:
     FGraphicsDevice* Graphics;
@@ -56,8 +58,9 @@ private:
     USubEngine* Engine = nullptr;
     TArray<UStaticMeshComponent*> StaticMeshComponents;
     USkeletalMesh* PreviewSkeletalMesh = nullptr;
+    USkeletalMeshComponent* PreviewSkeletalMeshComp = nullptr;
     FEditorViewportClient* TargetViewport = nullptr;
-    
+    FLineRenderPass* LineRenderPass = nullptr;
 private:
     /** TargetPos & MaxZ Offset */
     bool bOnlyOnce = false;
