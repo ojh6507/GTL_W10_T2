@@ -55,7 +55,10 @@ void ARandCharacter::Tick(float DeltaTime)
 
 	// [TEST] Update isMove
 	FVector CurrentLocation = GetActorLocation();
-	float DistanceMoved = FVector::Dist(CurrentLocation, PreviousLocation);
+	float DistanceMoved = FMath::Sqrt(
+		FMath::Square(PreviousLocation.X - CurrentLocation.X)
+		+ FMath::Square(PreviousLocation.Y - CurrentLocation.Y)
+	);
 
 	const float MovementThreshold = 0.0f; // 단위는 cm 또는 프로젝트 단위에 맞게 설정
 

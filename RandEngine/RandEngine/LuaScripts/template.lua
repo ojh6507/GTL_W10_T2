@@ -3,8 +3,8 @@ turnSpeed = 80
 moveSpeed = 10 -- 변수명 일관성 (MoveSpeed -> moveSpeed)
 
 -- 중력 및 점프 관련 속성
-gravity = -9.8 * 2 -- 중력 가속도 (단위는 게임 스케일에 맞춰 조정, 예시로 *2)
-jumpForce = 15     -- 점프 시 초기 수직 속도
+gravity = -9.8 * 15 -- 중력 가속도 (단위는 게임 스케일에 맞춰 조정, 예시로 *2)
+jumpForce = 120    -- 점프 시 초기 수직 속도
 verticalVelocity = 0
 isGrounded = true  -- 캐릭터가 지면에 있는지 여부 (간단한 플래그)
                    -- 실제로는 Raycast 등으로 감지해야 함

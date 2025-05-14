@@ -54,6 +54,9 @@ UStateMachineAnimInstance::UStateMachineAnimInstance() : StateMachine(nullptr)
     if (IdleIdx != INDEX_NONE && JumpIdx != INDEX_NONE) {
         StateMachine->AddTransition(JumpIdx, IdleIdx, &UStateMachineAnimInstance::Cond_CanIdle, TEXT("JumpToIdle"));
     }
+    if (WalkIdx != INDEX_NONE && JumpIdx != INDEX_NONE) {
+        StateMachine->AddTransition(JumpIdx, WalkIdx, &UStateMachineAnimInstance::Cond_CanWalk, TEXT("JumpToWalk"));
+    }
 
     StateMachine->Initialize();
 }
