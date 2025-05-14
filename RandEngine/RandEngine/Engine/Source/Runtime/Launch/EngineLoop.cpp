@@ -164,7 +164,7 @@ void FEngineLoop::Render(float DeltaTime)
     UnrealEditor->Render();
     
     FConsole::GetInstance().Draw();
-    FDrawer::GetInstance().Render(DeltaTime);
+    // FDrawer::GetInstance().Render(DeltaTime);
     EngineProfiler.Render(GraphicDevice.DeviceContext, GraphicDevice.ScreenWidth, GraphicDevice.ScreenHeight);
     
     FUIManager->EndFrame();
@@ -302,7 +302,7 @@ void FEngineLoop::Tick()
         if (bIsExit) break;
 
         const float DeltaTime = static_cast<float>(ElapsedTime / 1000.f);
-
+        GElapsedTime = DeltaTime;
         Input();
         GEngine->Tick(DeltaTime);
         LevelEditor->Tick(DeltaTime);
@@ -379,7 +379,7 @@ void FEngineLoop::Input()
         {
             bLClicked = true;
 
-            ToggleContentDrawer();
+            // ToggleContentDrawer();
         }
     }
     else
@@ -662,7 +662,6 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
 void FEngineLoop::UpdateUI()
 {
     FConsole::GetInstance().OnResize(AppWnd);
-    FDrawer::GetInstance().OnResize(AppWnd);
     if (GEngineLoop.GetUnrealEditor())
     {
         GEngineLoop.GetUnrealEditor()->OnResize(AppWnd);
@@ -670,7 +669,3 @@ void FEngineLoop::UpdateUI()
     ViewportTypePanel::GetInstance().OnResize(AppWnd);
 }
 
-void FEngineLoop::ToggleContentDrawer()
-{
-    FDrawer::GetInstance().Toggle();
-}

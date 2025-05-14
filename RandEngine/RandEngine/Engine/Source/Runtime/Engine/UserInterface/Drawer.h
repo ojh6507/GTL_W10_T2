@@ -1,8 +1,9 @@
 ﻿#pragma once
 #include "GameFramework/Actor.h"
 #include "PropertyEditor/IWindowToggleable.h"
+#include "UnrealEd/EditorPanel.h"
 
-class FDrawer : public IWindowToggleable
+class FDrawer : public UEditorPanel, IWindowToggleable
 {
 public:
     FDrawer() = default;
@@ -19,10 +20,9 @@ public:
     void Toggle() override;
     
 public:
-    static FDrawer& GetInstance();
-    
+    virtual void Render();
     void Render(float DeltaTime);
-    void OnResize(HWND hWnd);
+    void OnResize(HWND hWnd) override;
 
     void RenderContentDrawer();
 private:

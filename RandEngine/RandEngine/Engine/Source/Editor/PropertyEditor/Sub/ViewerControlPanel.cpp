@@ -6,6 +6,9 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "SubWindow/SkeletalSubEngine.h"
 #include "SubWindow/SubEngine.h"
+#include "UserInterface/Drawer.h"
+
+class FDrawer;
 
 void ViewerControlPanel::Render()
 {
@@ -35,9 +38,17 @@ void ViewerControlPanel::Render()
         {
             SkeletalSubEngine->SaveSkeletalMesh();
         }
+        ImGui::SameLine();
+        if (ImGui::Button("\ue950",IconSize))
+        {
+            if (WindowType == WT_SkeletalSubWindow)
+                static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubSkeletalPanel("Drawer").get())->Toggle();
+            else if (WindowType == WT_AnimationSubWindow)
+                static_cast<FDrawer*>(GEngineLoop.GetUnrealEditor()->GetSubAnimationPanel("Drawer").get())->Toggle();
+        }
         ImGui::PopFont();
 
-        ImGui::SameLine(0,Width *0.8);
+        ImGui::SameLine(0,Width *0.75);
         constexpr ImVec4 ActiveColor = ImVec4(0.00f, 0.0f, 0.40f, 1.0f);
         if (WindowType == WT_SkeletalSubWindow)
             ImGui::PushStyleColor(ImGuiCol_Button, ActiveColor);

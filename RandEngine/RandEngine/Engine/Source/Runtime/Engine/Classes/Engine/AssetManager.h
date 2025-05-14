@@ -93,7 +93,7 @@ public:
     // void AddStaticMesh(const FName& InKey, UStaticMesh* InValue);
 
 private:
-    void LoadFiles(uint8 ExtensionFlags);
+    void LoadFiles(uint8 ExtensionFlags = static_cast<uint8>(EExtensionType::All));
     void LoadFile(std::filesystem::path Entry, uint8 ExtensionFlags = static_cast<uint8>(EExtensionType::All));
 
     inline static TMap<FName, UMaterial*> MaterialMap;

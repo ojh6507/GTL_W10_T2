@@ -21,4 +21,5 @@
 #define ICON_SQUARE     0xE9E4
 #define ICON_PAUSE      0xE99C
 
+#define ICON_FOLDER     0XE950
 #endif // !__ICON_FONT__

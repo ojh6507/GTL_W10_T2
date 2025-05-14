@@ -40,7 +40,7 @@ public:
     void Input();
 
     void GetClientSize(uint32& OutWidth, uint32& OutHeight) const;
-    static void ToggleContentDrawer();
+    // static void ToggleContentDrawer();
 
 private:
     void WindowInit(HINSTANCE hInstance);
@@ -88,6 +88,7 @@ private:
     int32 TargetFPS = 999;
 
 public:
+    float GElapsedTime = 0;
     bool bRepositionAnimWindow = false;
     bool bRePositionSkeletalWindow = false;
     ESkinningType GetSkinningType() { return SkinningType; }

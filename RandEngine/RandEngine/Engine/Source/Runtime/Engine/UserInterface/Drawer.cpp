@@ -9,11 +9,6 @@
 #include "SubWindow/SubRenderer.h"
 #include "UObject/UObjectIterator.h"
 
-FDrawer& FDrawer::GetInstance()
-{
-    static FDrawer Instance;
-    return Instance;
-}
 
 void FDrawer::Toggle()
 {
@@ -22,6 +17,10 @@ void FDrawer::Toggle()
     {
         bFirstOpenFrame = true;
     }
+}
+
+void FDrawer::Render()
+{
 }
 
 void FDrawer::Render(float DeltaTime)
